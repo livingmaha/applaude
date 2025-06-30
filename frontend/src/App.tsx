@@ -1,3 +1,4 @@
+// File: /frontend/src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -5,10 +6,11 @@ import { AuthProvider } from './contexts/AuthContext';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
-import Onboarding from './pages/Onboarding';
+import CreateProjectPage from './pages/CreateProjectPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProtectedRoute from './components/core/ProtectedRoute';
 
-// A simple landing page for new visitors
+// Keep the simple landing page for new visitors
 const LandingPage = () => (
   <div className="flex flex-col items-center justify-center min-h-screen text-soft-white bg-quantum-black p-8">
     <img src="/logo_icon.png" alt="Applause Logo" className="w-32 h-32 mb-8" />
@@ -39,8 +41,9 @@ function App() {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            {/* Add other protected routes here in the future */}
+            <Route path="/projects/create" element={<CreateProjectPage />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            {/* The original onboarding conversational flow can be integrated here later */}
           </Route>
         </Routes>
       </Router>
