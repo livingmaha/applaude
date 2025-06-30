@@ -3,6 +3,7 @@ from celery import shared_task, chain
 from .market_analyst_agent import MarketAnalystAgent
 from .design_agent import DesignAgent
 from apps.projects.models import Project
+from .code_generation_agent import CodeGenAgent
 
 @shared_task
 def run_market_analysis(project_id: int):
@@ -13,6 +14,23 @@ def run_market_analysis(project_id: int):
         project = Project.objects.get(id=project_id)
         project.status = Project.ProjectStatus.ANALYSIS_PENDING
         project.save()
+
+        if project.payments.filter(status='SUCCESSFUL').exists():
+            project.status = Project.ProjectStatus.CODE_GENERATION
+            project.save()
+
+            agent = CodeGenAgent()
+            agent.execute(project_id=project.id)
+        else:
+            raise Exception(f"No successful payment found for project {project_id}.")
+
+    except Project.DoesNotExist:
+        print(f"Project {project_id} not found for code generation.")
+    except Exception as e:
+        project.status = Project.ProjectStatus.FAILED
+        project.save()
+        print(f"Error during code generation for project {project_id}: {e}")
+        raise
 
         agent = MarketAnalystAgent()
         agent.execute(project_id=project_id)
