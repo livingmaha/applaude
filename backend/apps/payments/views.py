@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from apps.projects.models import Project
 from .models import Payment
 from .serializers import PaymentSerializer
+from agents.tasks import run_code_generation
 
 # This will be the fixed price for app generation
 APP_GENERATION_PRICE = Decimal('50.00') # Example price: $50
@@ -90,12 +91,12 @@ class PaystackWebhookView(APIView):
             reference = event_data['data']['reference']
             try:
                 payment = Payment.objects.get(paystack_reference=reference)
-                payment.status = Payment.PaymentStatus.SUCCESSFUL
-                payment.save()
-                
-                # Payment successful, now trigger the code generation agent
-                # TODO: from agents.tasks import run_code_generation
-                # run_code_generation.delay(payment.project.id)
+                if payment.status != 'SUCCESSFUL': # Ensure we only process once
+                    payment.status = Payment.PaymentStatus.SUCCESSFUL
+                    payment.save()
+                    
+                    # Payment successful, now trigger the code generation agent
+                    run_code_generation.delay(payment.project.id)
                 
             except Payment.DoesNotExist:
                 return Response(status=status.HTTP_404_NOT_FOUND)
