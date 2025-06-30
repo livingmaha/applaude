@@ -5,3 +5,5 @@ mysqlclient
 django-cors-headers
 google-generativeai
 python-dotenv
+celery
+redis
