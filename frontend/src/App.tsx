@@ -1,24 +1,50 @@
-// File: /frontend/src/App.tsx
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+
 import SignUpPage from './pages/SignUpPage';
-import Onboarding from './pages/Onboarding'; // We'll use this later
-// We will create LoginPage and Dashboard soon
-// import LoginPage from './pages/LoginPage';
-// import Dashboard from './pages/Dashboard';
+import LoginPage from './pages/LoginPage';
+import Dashboard from './pages/Dashboard';
+import Onboarding from './pages/Onboarding';
+import ProtectedRoute from './components/core/ProtectedRoute';
+
+// A simple landing page for new visitors
+const LandingPage = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen text-soft-white bg-quantum-black p-8">
+    <img src="/logo_icon.png" alt="Applause Logo" className="w-32 h-32 mb-8" />
+    <h1 className="text-5xl font-bold mb-4">Build Your App with AI</h1>
+    <p className="text-xl text-gray-400 mb-12">The future of creation is here. Let's get started.</p>
+    <div className="space-x-4">
+      <Link to="/login" className="px-8 py-3 bg-ion-blue text-black font-bold rounded-lg hover:bg-opacity-90 transition-all">
+        Login
+      </Link>
+      <Link to="/signup" className="px-8 py-3 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all">
+        Sign Up
+      </Link>
+    </div>
+  </div>
+);
+
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* For now, we'll make SignUp the main page. Later, this will be a landing page. */}
-        <Route path="/" element={<SignUpPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        {/* <Route path="/login" element={<LoginPage />} /> */}
-        {/* <Route path="/onboarding" element={<Onboarding />} /> */}
-        {/* <Route path="/dashboard" element={<Dashboard />} /> */}
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            {/* Add other protected routes here in the future */}
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
