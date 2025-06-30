@@ -1,1 +1,7 @@
-
+# File: /backend/requirements.txt
+django
+djangorestframework
+mysqlclient
+django-cors-headers
+google-generativeai
+python-dotenv
