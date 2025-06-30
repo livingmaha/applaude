@@ -142,3 +142,18 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Default Vite dev server port
 ]
+
+# File: /backend/applause_api/settings.py
+# ... (all previous settings remain) ...
+
+# At the BOTTOM of the file, add the Celery configuration:
+
+# CELERY SETTINGS
+# This points Celery to our Redis server, which acts as the message broker.
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
