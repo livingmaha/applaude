@@ -14,6 +14,9 @@ export default {
         'solar-orange': '#FFC700',
         'soft-white': '#E0E0E0',
       },
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
+      },
     },
   },
   plugins: [],
