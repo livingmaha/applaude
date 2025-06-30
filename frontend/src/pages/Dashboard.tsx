@@ -1,17 +1,44 @@
 
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import apiClient from '../services/api';
+import { PlusCircle } from 'lucide-react';
+import Card from '../components/ui/Card';
+
+// Define the type for a project object
+interface Project {
+  id: number;
+  name: string;
+  status: string;
+  app_type: string;
+  created_at: string;
+}
 
 const Dashboard = () => {
   const authContext = useContext(AuthContext);
   const navigate = useNavigate();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!authContext) {
-    throw new Error("Dashboard must be within an AuthProvider");
-  }
-
+  if (!authContext) throw new Error("Dashboard must be within an AuthProvider");
   const { user, logout } = authContext;
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await apiClient.get('/projects/');
+        setProjects(response.data);
+      } catch (err) {
+        setError('Failed to fetch projects.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -19,16 +46,50 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-soft-white bg-quantum-black p-8">
-      <h1 className="text-4xl font-bold text-ion-blue mb-4">Welcome to Applause</h1>
-      {user && <p className="text-xl mb-8">You are logged in as: {user.email}</p>}
-      <p className="mb-8">Your application dashboard is ready to be built.</p>
-      <button 
-        onClick={handleLogout}
-        className="px-6 py-2 bg-solar-orange text-black font-bold rounded-lg hover:bg-opacity-90 transition-all"
-      >
-        Logout
-      </button>
+    <div className="min-h-screen text-soft-white bg-quantum-black p-8">
+      <header className="flex justify-between items-center mb-12">
+        <div>
+          <h1 className="text-3xl font-bold text-soft-white">Your Dashboard</h1>
+          {user && <p className="text-ion-blue">Welcome back, {user.email}</p>}
+        </div>
+        <button 
+          onClick={handleLogout}
+          className="px-6 py-2 bg-solar-orange text-black font-bold rounded-lg hover:bg-opacity-90 transition-all"
+        >
+          Logout
+        </button>
+      </header>
+
+      <main>
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold">My Projects</h2>
+            <Link to="/projects/create" className="flex items-center gap-2 px-4 py-2 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all">
+                <PlusCircle size={20} />
+                New Project
+            </Link>
+        </div>
+
+        {loading && <p>Loading projects...</p>}
+        {error && <p className="text-solar-orange">{error}</p>}
+        
+        {!loading && projects.length === 0 ? (
+            <Card className="p-8 text-center">
+                <p className="text-gray-400">You haven't created any projects yet. Click 'New Project' to begin.</p>
+            </Card>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(project => (
+                    <Link to={`/projects/${project.id}`} key={project.id}>
+                        <Card className="p-6 hover:border-ion-blue transition-all duration-300 cursor-pointer">
+                            <h3 className="text-xl font-bold text-ion-blue mb-2">{project.name}</h3>
+                            <p className="text-sm text-gray-400 mb-4">Platform: {project.app_type}</p>
+                            <span className="text-xs font-semibold px-3 py-1 bg-gray-700 rounded-full">{project.status}</span>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+        )}
+      </main>
     </div>
   );
 };
