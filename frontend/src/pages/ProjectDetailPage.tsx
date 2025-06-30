@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiClient from '../services/api';
@@ -116,5 +115,25 @@ const ProjectDetailPage = () => {
         </div>
     );
 };
+
+useEffect(() => {
+    // Only poll if the project is in a pending state
+    if (project && (project.status.includes('PENDING') || project.status.includes('GENERATION'))) {
+        const interval = setInterval(() => {
+            // Silently refetch the project details
+            apiClient.get(`/projects/${id}/`).then(response => {
+                setProject(response.data);
+            });
+        }, 5000); // Poll every 5 seconds
+
+        // Cleanup interval on component unmount
+        return () => clearInterval(interval);
+    }
+}, [project, id]); // Rerun this effect if the project data changes
+
+// ... in the JSX, we will now display the status_message
+<p className="text-lg text-gray-400 mb-4">
+    Status: <span className="font-semibold text-solar-orange">{project.status_message || project.status}</span>
+</p>
             
 export default ProjectDetailPage;
