@@ -44,20 +44,20 @@ const ProjectDetailPage = () => {
     }, [id]);
 
     const handleMonetization = async () => {
-    if (!project) return;
-    try {
-        const paymentData = await paymentService.initializePayment(project.id);
-        // Redirect user to Paystack's checkout page
-        window.location.href = paymentData.authorization_url;
-    } catch (error) {
-        console.error("Failed to start payment process:", error);
-        alert("Could not initiate payment. Please try again later.");
-    }
-};
+        if (!project) return;
+        try {
+            const paymentData = await paymentService.initializePayment(project.id);
+            // Redirect user to Paystack's checkout page
+            window.location.href = paymentData.authorization_url;
+        } catch (error) {
+            console.error("Failed to start payment process:", error);
+            alert("Could not initiate payment. Please try again later.");
+        }
+    };
 
-    if (loading) return <div className="text-center p-10">Loading Project...</div>;
+    if (loading) return <div className="text-center p-10 text-soft-white">Loading Project...</div>;
     if (error) return <div className="text-center p-10 text-solar-orange">{error}</div>;
-    if (!project) return <div className="text-center p-10">Project not found.</div>;
+    if (!project) return <div className="text-center p-10 text-soft-white">Project not found.</div>;
 
     return (
         <div className="min-h-screen bg-quantum-black text-soft-white p-8">
@@ -94,22 +94,27 @@ const ProjectDetailPage = () => {
                         <p className="text-gray-400">AI analysis is pending...</p>
                     )}
                 </Card>
-                <Card className="mt-8 p-6">
-                <div className="flex flex-col md:flex-row items-center justify-between">
-                    <div>
-                        <h2 className="text-2xl font-bold">Ready for Launch?</h2>
-                        <p className="text-gray-400">Generate and download your mobile application.</p>
+            </div>
+
+            {/* Monetization Section - Correctly placed outside the grid */}
+            {project.status === 'DESIGN_COMPLETE' && (
+                 <Card className="mt-8 p-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold">Ready for Launch?</h2>
+                            <p className="text-gray-400">Generate and download your mobile application.</p>
+                        </div>
+                        <button
+                            onClick={handleMonetization}
+                            className="mt-4 md:mt-0 w-full md:w-auto px-8 py-3 bg-gradient-to-r from-fusion-pink to-solar-orange text-white font-bold rounded-lg hover:scale-105 transition-transform"
+                        >
+                            Generate App ($50.00)
+                        </button>
                     </div>
-                    <button
-                        onClick={handleMonetization}
-                        className="mt-4 md:mt-0 w-full md:w-auto px-8 py-3 bg-gradient-to-r from-fusion-pink to-solar-orange text-white font-bold rounded-lg hover:scale-105 transition-transform"
-                    >
-                        Generate App ($50.00)
-                    </button>
-                </div>
-            </Card>
-        )}
-    </div>
-);
+                </Card>
+            )}
+        </div>
+    );
+};
             
 export default ProjectDetailPage;
