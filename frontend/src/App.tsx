@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import CreateProjectPage from './pages/CreateProjectPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProtectedRoute from './components/core/ProtectedRoute';
+import AboutPage from './pages/AboutPage';
 
 // Keep the simple landing page for new visitors
 const LandingPage = () => (
@@ -36,6 +37,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
 
           {/* Protected Routes */}
