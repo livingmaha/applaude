@@ -58,4 +58,12 @@ class MarketAnalystAgent(BaseAgent):
         print(f"Market Analysis complete for project {project_id}. Persona generated.")
         
         # 4. (Future) Trigger the next agent in the chain
-        # design_agent.delay(project_id=project.id)
+        #design_agent.delay(project_id=project.id)
+        project.status_message = "Analyzing website content and structure..."
+        project.save()
+        
+        project.user_persona_document = persona_document
+        project.status_message = "Market analysis complete. User persona generated."
+        project.status = Project.ProjectStatus.ANALYSIS_COMPLETE
+        project.save()
+        
