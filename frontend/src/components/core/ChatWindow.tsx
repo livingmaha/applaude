@@ -1,26 +1,20 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Send } from 'lucide-react';
 
 interface Message {
     text: string;
-    sender: 'user' | 'ai';
-}
-
-interface InteractiveOption {
-    text: string;
-    payload: any;
+    sender: string;
 }
 
 interface ChatWindowProps {
-    messages: Message[];
-    onSendMessage: (message: string | object) => void;
-    input: string;
-    setInput: (value: string) => void;
-    placeholder?: string;
-    interactiveOptions?: InteractiveOption[];
+    projectId: number;
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, input, setInput, placeholder, interactiveOptions }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState('');
+    const [isConnected, setIsConnected] = useState(false);
+    const webSocket = useRef<WebSocket | null>(null);
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -29,14 +23,53 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, input,
 
     useEffect(scrollToBottom, [messages]);
 
-    const handleSend = () => {
-        if (input.trim()) {
-            onSendMessage(input);
+    const connect = useCallback(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("Authentication token not found.");
+            return;
         }
-    };
-    
-    const handleOptionClick = (option: InteractiveOption) => {
-        onSendMessage(option);
+
+        const wsUrl = (process.env.VITE_API_URL || 'ws://127.0.0.1:8000')
+            .replace(/^http/, 'ws') + `/ws/chat/${projectId}/?token=${token}`;
+
+        webSocket.current = new WebSocket(wsUrl);
+
+        webSocket.current.onopen = () => {
+            console.log("WebSocket Connected");
+            setIsConnected(true);
+            setMessages(prev => [...prev, { text: 'Connected to Applause Prime...', sender: 'system' }]);
+        };
+
+        webSocket.current.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setMessages(prev => [...prev, { text: data.message, sender: data.sender }]);
+        };
+
+        webSocket.current.onclose = () => {
+            console.log("WebSocket Disconnected");
+            setIsConnected(false);
+            setMessages(prev => [...prev, { text: 'Connection lost. Attempting to reconnect...', sender: 'system' }]);
+            setTimeout(connect, 5000); // Reconnect after 5 seconds
+        };
+
+        webSocket.current.onerror = (error) => {
+            console.error("WebSocket Error:", error);
+        };
+    }, [projectId]);
+
+    useEffect(() => {
+        connect();
+        return () => {
+            webSocket.current?.close();
+        };
+    }, [connect]);
+
+    const handleSend = () => {
+        if (input.trim() && webSocket.current?.readyState === WebSocket.OPEN) {
+            webSocket.current.send(JSON.stringify({ 'message': input }));
+            setInput('');
+        }
     };
 
     return (
@@ -44,27 +77,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, input,
             <div className="flex-grow p-6 overflow-y-auto space-y-4">
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-xl shadow-md ${msg.sender === 'user' ? 'bg-fusion-pink text-white' : 'bg-gray-700 bg-opacity-50 text-soft-white'}`}>
+                        <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-xl shadow-md ${
+                            msg.sender === 'user' ? 'bg-fusion-pink text-white' : 
+                            msg.sender === 'system' ? 'bg-gray-800 text-gray-400 italic' :
+                            'bg-gray-700 bg-opacity-50 text-soft-white'
+                        }`}>
+                            <span className="font-bold block text-xs">{msg.sender}</span>
                             {msg.text}
                         </div>
                     </div>
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-
-            {interactiveOptions && interactiveOptions.length > 0 && (
-                <div className="p-2 flex flex-wrap justify-center gap-2 border-t border-white border-opacity-10">
-                    {interactiveOptions.map((option, index) => (
-                        <button
-                            key={index}
-                            onClick={() => handleOptionClick(option)}
-                            className="px-4 py-2 bg-ion-blue text-white font-bold rounded-lg hover:bg-opacity-80 transition-all"
-                        >
-                            {option.text}
-                        </button>
-                    ))}
-                </div>
-            )}
 
             <div className="p-4 bg-black bg-opacity-30 border-t border-white border-opacity-10">
                 <div className="flex items-center">
@@ -73,14 +97,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, input,
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder={placeholder || "Type your message..."}
+                        placeholder={isConnected ? "Chat with Applause Prime..." : "Connecting..."}
                         className="w-full bg-transparent text-soft-white placeholder-gray-500 focus:outline-none"
-                        disabled={interactiveOptions && interactiveOptions.length > 0}
+                        disabled={!isConnected}
                     />
                     <button
                         onClick={handleSend}
                         className="ml-4 p-2 bg-fusion-pink rounded-full text-white hover:bg-opacity-80 transition-all duration-300"
-                        disabled={interactiveOptions && interactiveOptions.length > 0}
+                        disabled={!isConnected}
                     >
                         <Send size={20} />
                     </button>
