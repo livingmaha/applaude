@@ -1,3 +1,4 @@
+# backend/apps/chat/consumers.py
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -8,7 +9,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'chat_{self.room_name}'
-        self.user = self.scope.get('user', AnonymousUser())
+        
+        # User authentication via token in query string
+        token_key = self.scope['query_string'].decode().split('=')[1]
+        self.user = await self.get_user(token_key)
 
         if self.user.is_anonymous:
             await self.close()
@@ -62,8 +66,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
         
-        # Get response from AI agent
-        # In a real scenario, this would call an agent task
+        # Get response from AI agent (placeholder for now)
         ai_response = f"Applause Prime: I have received your message: '{message}'"
         
         await self.channel_layer.group_send(
@@ -85,3 +88,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'sender': sender
         }))
+
+    @database_sync_to_async
+    def get_user(self, token_key):
+        try:
+            token = Token.objects.get(key=token_key)
+            return token.user
+        except Token.DoesNotExist:
+            return AnonymousUser()
