@@ -13,14 +13,16 @@ Applause is a revolutionary platform that empowers non-technical creators to bui
 * Tailwind CSS
 * React Router
 * Axios
+* Recharts
 
 **Backend:**
 * Django (Monolithic, Django REST Framework)
 * Celery (for asynchronous AI tasks)
+* Django Channels (for WebSockets)
 
 **Database & Broker:**
-* MySQL
-* Redis (for Celery message brokering)
+* MySQL (or PostgreSQL in production)
+* Redis
 
 **AI & Payments:**
 * Google Gemini API
@@ -28,106 +30,87 @@ Applause is a revolutionary platform that empowers non-technical creators to bui
 
 ---
 
-### Prerequisites
-
-Before you begin, ensure you have the following installed on your local machine:
-* Node.js (v18 or later)
-* Python (v3.10 or later)
-* MySQL Community Server
-* Redis Server
-
----
-
 ### Final Execution Protocol: Local Deployment
 
 Follow these steps precisely to set up and run the entire Applause platform locally.
 
-#### **Part 1: Backend Setup**
+(Local deployment instructions remain the same)
 
-1.  **Navigate to the Backend Directory:**
+---
+
+### **Part 4: Production Deployment Protocol**
+
+This section outlines the steps to deploy the Applause platform to a production environment (e.g., a cloud server like AWS EC2, DigitalOcean, etc.).
+
+#### **A. Frontend Deployment (Vercel)**
+
+The frontend is a static React application and is best hosted on a platform optimized for static sites.
+
+1.  **Push to GitHub:** Ensure your final code is pushed to your GitHub repository.
+2.  **Create a Vercel Account:** Sign up or log in to [Vercel](https://vercel.com).
+3.  **Import Project:** Import your GitHub repository into Vercel.
+4.  **Configure Project:**
+    * **Framework Preset:** Vercel should automatically detect it as a Vite project.
+    * **Root Directory:** Set the root directory to `frontend`.
+    * **Environment Variables:** Add an environment variable `VITE_API_URL` and set it to the public URL of your backend API (e.g., `https://api.yourapplause.com/api`).
+5.  **Deploy:** Vercel will automatically build and deploy the frontend. It will also redeploy on every push to the `main` branch.
+
+#### **B. Backend Deployment (Ubuntu Server)**
+
+This guide assumes you have an Ubuntu server set up.
+
+1.  **Install Dependencies:**
     ```bash
-    cd backend
+    sudo apt-get update
+    sudo apt-get install python3-venv python3-dev libmysqlclient-dev nginx supervisor redis-server
     ```
 
-2.  **Create and Populate `.env` File:** Create a file named `.env` in the `backend` directory and add your secret keys:
-    ```
-    DJANGO_SECRET_KEY='your-super-secret-key-here'
-    GEMINI_API_KEY='your-google-ai-gemini-api-key-here'
-    PAYSTACK_SECRET_KEY='your-paystack-secret-key-here'
-    ```
-
-3.  **Setup MySQL Database:** Open your MySQL client and run the following command to create the database:
-    ```sql
-    CREATE DATABASE applause_db;
-    ```
-    _Note: Ensure your MySQL user credentials in `backend/applause_api/settings.py` are correct._
-
-4.  **Create and Activate Python Virtual Environment:**
+2.  **Clone Repository:**
     ```bash
-    python -m venv venv
-    source venv/bin/activate
-    ```
-    _On Windows, use `venv\Scripts\activate`._
-
-5.  **Install Backend Dependencies:**
-    ```bash
-    pip install -r requirements.txt
+    git clone [https://github.com/your-username/applause.git](https://github.com/your-username/applause.git)
+    cd applause/backend
     ```
 
-6.  **Run Database Migrations:**
+3.  **Setup Environment:**
+    * Create and activate the virtual environment as in the local setup.
+    * Install dependencies: `pip install -r requirements.txt`.
+    * Create and populate the `.env` file with your production keys and database credentials. Set `DEBUG=False`.
+
+4.  **Setup Gunicorn:** Gunicorn will serve as the production WSGI server for Django.
+    * A sample configuration is provided in `gunicorn.conf.py`.
+
+5.  **Setup Nginx (Reverse Proxy):** Nginx will face the public internet and proxy requests to Gunicorn.
+    * Create a new Nginx configuration file:
+        ```bash
+        sudo nano /etc/nginx/sites-available/applause
+        ```
+    * Paste the contents of the provided `nginx.conf` into this file, making sure to replace `your_domain.com` and other placeholders.
+    * Enable the site and restart Nginx:
+        ```bash
+        sudo ln -s /etc/nginx/sites-available/applause /etc/nginx/sites-enabled
+        sudo nginx -t
+        sudo systemctl restart nginx
+        ```
+
+6.  **Setup Supervisor (Process Management):** Supervisor will ensure the Gunicorn and Celery processes are always running.
+    * Create a new Supervisor configuration file:
+        ```bash
+        sudo nano /etc/supervisor/conf.d/applause.conf
+        ```
+    * Paste the contents of the provided `supervisor.conf` file, updating paths as necessary.
+    * Start the processes:
+        ```bash
+        sudo supervisorctl reread
+        sudo supervisorctl update
+        sudo supervisorctl start applause-gunicorn
+        sudo supervisorctl start applause-celery
+        ```
+
+7.  **Run Migrations & Collect Static:**
     ```bash
     python manage.py makemigrations
     python manage.py migrate
+    python manage.py collectstatic
     ```
 
-#### **Part 2: Frontend Setup**
-
-1.  **Navigate to the Frontend Directory (in a new terminal window):**
-    ```bash
-    cd frontend
-    ```
-
-2.  **Install Frontend Dependencies:**
-    ```bash
-    npm install
-    ```
-
-#### **Part 3: Launching the Applause Platform**
-
-To run the application, you must start **four** separate processes in **four** separate terminals.
-
-1.  **Terminal 1: Start Redis Server**
-    * Follow the installation guide for your OS to start the Redis server. On most systems, the command is simply:
-        ```bash
-        redis-server
-        ```
-
-2.  **Terminal 2: Start the Backend Celery Worker**
-    * Navigate to the `backend` directory and ensure your virtual environment is active.
-        ```bash
-        cd /path/to/applause/backend
-        source venv/bin/activate
-        celery -A applause_api worker -l info
-        ```
-
-3.  **Terminal 3: Start the Backend Django Server**
-    * Navigate to the `backend` directory and ensure your virtual environment is active.
-        ```bash
-        cd /path/to/applause/backend
-        source venv/bin/activate
-        python manage.py runserver
-        ```
-
-4.  **Terminal 4: Start the Frontend Vite Server**
-    * Navigate to the `frontend` directory.
-        ```bash
-        cd /path/to/applause/frontend
-        npm run dev
-        ```
-
-**Your Applause platform is now live.**
-
-* Access the frontend at: `http://localhost:5173`
-* The backend API is running at: `http://127.0.0.1:8000`
-
----
+**Your Applause platform is now live in production.**
