@@ -1,9 +1,11 @@
-
 from celery import shared_task
 from apps.projects.models import Project
+from apps.surveys.models import SurveyResponse, AppRating
 from .market_analyst_agent import MarketAnalystAgent
 from .design_agent import DesignAgent
 from .code_generation_agent import CodeGenAgent
+from django.db.models import Count, Avg
+import json
 
 @shared_task(bind=True)
 def run_market_analysis(self, project_id: int):
@@ -74,3 +76,47 @@ def run_code_generation(self, project_id: int):
         Project.objects.filter(id=project_id).update(status=Project.ProjectStatus.FAILED)
         print(f"Error during code generation for project {project_id}: {e}")
         raise
+
+@shared_task
+def process_feedback_data(project_id):
+    project = Project.objects.get(id=project_id)
+    
+    # Process App Ratings
+    ratings = AppRating.objects.filter(project=project)
+    if ratings.exists():
+        summary = ratings.values('rating').annotate(count=Count('rating')).order_by('-rating')
+        project.app_ratings_summary = {item['rating']: item['count'] for item in summary}
+
+    # Process Survey Responses (Example for a feature request question)
+    responses = SurveyResponse.objects.filter(project=project, survey_type='PMF')
+    if responses.exists():
+        feature_requests = {}
+        # This is a simplified example. A real implementation would parse 'responses' JSON
+        # and look for specific question IDs related to feature requests.
+        # For demonstration, we'll just count total responses.
+        project.survey_response_analytics = {
+            'total_responses': responses.count(),
+            # ... more complex analytics would go here
+        }
+
+    project.save()
+
+
+@shared_task
+def run_ai_orchestration():
+    """
+    The Executive Product Lead Agent's periodic task.
+    """
+    projects_to_check = Project.objects.filter(status='COMPLETED', enable_pmf_survey=True)
+    
+    for project in projects_to_check:
+        analytics = project.survey_response_analytics
+        if analytics and analytics.get('feature_requests'):
+            for feature, percentage in analytics['feature_requests'].items():
+                if percentage > 70: # Build threshold
+                    # Trigger an app update
+                    print(f"Orchestrator: High demand for '{feature}' in project {project.name}. Triggering update.")
+                    run_code_generation.delay(project.id, update_feature=feature)
+                    project.status = Project.ProjectStatus.UPDATE_PENDING
+                    project.save()
+                    break # Process one feature update at a time
