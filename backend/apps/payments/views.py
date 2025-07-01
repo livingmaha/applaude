@@ -3,48 +3,56 @@ import requests
 import hmac
 import hashlib
 import json
+import uuid
 from decimal import Decimal
 from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from apps.projects.models import Project
+from apps.users.models import CustomUser
 from .models import Payment
-from .serializers import PaymentSerializer
 from agents.tasks import run_code_generation
 
-# This will be the fixed price for app generation
-APP_GENERATION_PRICE = Decimal('50.00') # Example price: $50
+PLAN_PRICES = {
+    'ONETIME': Decimal('50.00'),
+    'MONTHLY': Decimal('15.00'),
+    'YEARLY': Decimal('150.00'),
+}
 
 class InitializePaymentView(APIView):
-    """
-    Initialize a payment transaction for a project.
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         project_id = request.data.get('project_id')
-        if not project_id:
-            return Response({'error': 'Project ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        plan_type = request.data.get('plan_type')
+
+        if not all([project_id, plan_type]):
+            return Response({'error': 'Project ID and Plan Type are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if plan_type not in PLAN_PRICES:
+            return Response({'error': 'Invalid plan type.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             project = Project.objects.get(id=project_id, owner=request.user)
         except Project.DoesNotExist:
-            return Response({'error': 'Project not found or you are not the owner.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Create a payment record
+        amount = PLAN_PRICES[plan_type]
         email = request.user.email
-        amount = APP_GENERATION_PRICE
+        
+        # Generate a unique reference for Paystack
+        paystack_reference = f"applause-{project_id}-{uuid.uuid4().hex[:12]}"
         
         payment = Payment.objects.create(
             user=request.user,
             project=project,
             amount=amount,
             email=email,
-            paystack_reference=f"applause-{project_id}-{uuid.uuid4().hex[:6]}" # Generate a unique ref
+            plan_type=plan_type,
+            paystack_reference=paystack_reference
         )
         
-        # Call Paystack API to initialize transaction
         url = "https://api.paystack.co/transaction/initialize"
         headers = {
             "Authorization": f"Bearer {os.getenv('PAYSTACK_SECRET_KEY')}",
@@ -52,30 +60,26 @@ class InitializePaymentView(APIView):
         }
         payload = {
             "email": email,
-            "amount": str(amount * 100),  # Paystack expects amount in kobo
-            "reference": payment.paystack_reference,
-            "callback_url": f"http://localhost:5173/projects/{project.id}" # Where to redirect after payment
+            "amount": str(amount * 100),
+            "reference": paystack_reference,
+            "callback_url": f"http://localhost:5173/projects/{project.id}?payment=success"
         }
 
         try:
             response = requests.post(url, headers=headers, json=payload)
+            response.raise_for_status()
             response_data = response.json()
             if response_data['status']:
                 return Response(response_data['data'])
             else:
-                return Response({'error': 'Failed to initialize payment with Paystack.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'error': 'Failed to initialize payment.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except requests.exceptions.RequestException as e:
             return Response({'error': str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-
 class PaystackWebhookView(APIView):
-    """
-    Handle webhooks from Paystack to verify transactions.
-    """
-    permission_classes = [permissions.AllowAny] # Webhooks don't have auth
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
-        # Verify the webhook signature
         paystack_key = os.getenv('PAYSTACK_SECRET_KEY')
         signature = request.headers.get('x-paystack-signature')
         if not signature or not hmac.compare_digest(
@@ -91,12 +95,17 @@ class PaystackWebhookView(APIView):
             reference = event_data['data']['reference']
             try:
                 payment = Payment.objects.get(paystack_reference=reference)
-                if payment.status != 'SUCCESSFUL': # Ensure we only process once
+                if payment.status == 'PENDING':
                     payment.status = Payment.PaymentStatus.SUCCESSFUL
                     payment.save()
                     
-                    # Payment successful, now trigger the code generation agent
-                    run_code_generation.delay(payment.project.id)
+                    user = payment.user
+                    if payment.plan_type in ['MONTHLY', 'YEARLY']:
+                        user.is_premium_subscribed = True
+                        user.save(update_fields=['is_premium_subscribed'])
+
+                    if not payment.project.status.startswith('COMPLETE'):
+                         run_code_generation.delay(payment.project.id)
                 
             except Payment.DoesNotExist:
                 return Response(status=status.HTTP_404_NOT_FOUND)
