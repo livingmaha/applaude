@@ -1,4 +1,3 @@
-
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -13,6 +12,7 @@ interface Project {
   status: string;
   app_type: string;
   created_at: string;
+  status_message?: string; // Add status_message to Project interface
 }
 
 const Dashboard = () => {
@@ -86,7 +86,9 @@ const Dashboard = () => {
                                 <p className="text-sm text-gray-400 mb-4">Platform: {project.app_type}</p>
                             </div>
                             <div className="mt-auto">
-                                <span className="text-xs font-semibold px-3 py-1 bg-gray-700 rounded-full">{project.status}</span>
+                                <span className="text-xs font-semibold px-3 py-1 bg-gray-700 rounded-full">
+                                    {project.status_message || project.status}
+                                </span>
                             </div>
                         </Card>
                     </Link>
