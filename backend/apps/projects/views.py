@@ -15,8 +15,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         This view should return a list of all the projects
         for the currently authenticated user.
+        
+        Optimized with select_related to pre-fetch the owner.
         """
-        return Project.objects.filter(owner=self.request.user).order_by('-created_at')
+        return Project.objects.filter(owner=self.request.user).select_related('owner').order_by('-created_at')
 
     def perform_create(self, serializer):
         """
