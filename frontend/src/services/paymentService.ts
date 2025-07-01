@@ -1,4 +1,3 @@
-
 import apiClient from './api';
 
 interface InitializePaymentResponse {
@@ -7,9 +6,10 @@ interface InitializePaymentResponse {
   reference: string;
 }
 
-const initializePayment = async (projectId: number): Promise<InitializePaymentResponse> => {
+const initializePayment = async (projectId: number, planType: 'ONETIME' | 'MONTHLY' | 'YEARLY'): Promise<InitializePaymentResponse> => {
   const response = await apiClient.post('/payments/initialize/', {
     project_id: projectId,
+    plan_type: planType,
   });
   return response.data;
 };
