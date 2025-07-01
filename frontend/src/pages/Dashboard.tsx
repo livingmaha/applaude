@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../services/api';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, User } from 'lucide-react'; 
 import Card from '../components/ui/Card';
 
 // Define the type for a project object
@@ -16,51 +16,56 @@ interface Project {
 }
 
 const Dashboard = () => {
-  const authContext = useContext(AuthContext);
-  const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+    const authContext = useContext(AuthContext);
+    const navigate = useNavigate();
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-  if (!authContext) throw new Error("Dashboard must be within an AuthProvider");
-  const { user, logout } = authContext;
+    if (!authContext) throw new Error("Dashboard must be within an AuthProvider");
+    const { user, logout } = authContext;
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await apiClient.get('/projects/');
-        setProjects(response.data);
-      } catch (err) {
-        setError('Failed to fetch projects.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const response = await apiClient.get('/projects/');
+                setProjects(response.data);
+            } catch (err) {
+                setError('Failed to fetch projects.');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProjects();
+    }, []);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
     };
-    fetchProjects();
-  }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+    return (
+        <div className="min-h-screen text-soft-white bg-quantum-black p-8">
+            <header className="flex justify-between items-center mb-12 animate-fade-in">
+                <div>
+                    <h1 className="text-3xl font-bold text-soft-white">Your Dashboard</h1>
+                    {user && <p className="text-ion-blue">Welcome back, {user.email}</p>}
+                </div>
+                <div className="flex items-center gap-4">
+                    <Link to="/profile" className="p-2 rounded-full hover:bg-gray-700 transition-colors" title="My Profile">
+                        <User size={22} />
+                    </Link>
+                    <button
+                        onClick={handleLogout}
+                        className="px-6 py-2 bg-solar-orange text-black font-bold rounded-lg hover:bg-opacity-90 transition-all"
+                    >
+                        Logout
+                    </button>
+                </div>
+            </header>
 
-  return (
-    <div className="min-h-screen text-soft-white bg-quantum-black p-8">
-      <header className="flex justify-between items-center mb-12 animate-fade-in">
-        <div>
-          <h1 className="text-3xl font-bold text-soft-white">Your Dashboard</h1>
-          {user && <p className="text-ion-blue">Welcome back, {user.email}</p>}
-        </div>
-        <button 
-          onClick={handleLogout}
-          className="px-6 py-2 bg-solar-orange text-black font-bold rounded-lg hover:bg-opacity-90 transition-all"
-        >
-          Logout
-        </button>
-      </header>
-
-      <main>
+          <main>
         <div className="flex justify-between items-center mb-6 animate-slide-in-right">
             <h2 className="text-2xl font-semibold">My Projects</h2>
             <Link to="/projects/create" className="flex items-center gap-2 px-4 py-2 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all">
