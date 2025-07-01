@@ -65,12 +65,48 @@ class CodeGenAgent(BaseAgent):
             ]
 
 
+
+
+        
         # 2. Construct the detailed task for the Gemini API with multi-step reasoning
         task_description = f"""
-        **MISSION CRITICAL TASK: Generate a production-ready mobile application.**
+        **MISSION CRITICAL TASK: Generate a production-ready mobile application with an integrated feedback engine.**
 
-        You are the 'Quantum Architect & Award-Winning Mobile Engineer Agent'. Your objective is to translate a user's project specifications, user persona, and brand identity into fully functional, clean, and well-structured source code for a native mobile application. You will integrate cutting-edge feedback and analytics features to ensure the app constantly evolves to meet user needs and achieves product-market fit.
+        **Input Data:**
+        - **Target Platform:** {project.app_type}
+        - **User Persona:** {project.user_persona_document}
+        - **Brand Palette:** {json.dumps(project.brand_palette, indent=2)}
+        - **Enable UX Survey:** {project.enable_ux_survey}
+        - **Enable PMF Survey:** {project.enable_pmf_survey}
 
+        **Core Instructions:**
+        1.  Generate the complete, high-quality source code for the requested mobile application.
+        2.  The code must be clean, scalable, and follow platform-specific best practices.
+        3.  Implement all UI elements using the provided `Brand Palette`.
+
+        **Feedback Engine Implementation (MANDATORY):**
+
+        You MUST generate code that performs the following actions within the mobile app:
+
+        1.  **Check Survey Flags:** The app MUST check the `enable_ux_survey` and `enable_pmf_survey` flags from the backend upon startup or when the relevant screen is loaded.
+
+        2.  **Display Survey Overlay:**
+            * If a survey is enabled, the app MUST display a **non-intrusive, full-screen survey overlay**.
+            * This overlay should appear after a set period of use (e.g., after the 5th app open, or 1 week after install). This logic should be implemented using local storage (e.g., SharedPreferences on Android, UserDefaults on iOS) to track app open counts or install date.
+            * The survey form itself must be **beautifully styled** using the app's own branding (colors, fonts) derived from the `Brand Palette`.
+
+        3.  **User Control:**
+            * The survey overlay MUST include a clear and prominent **"Dismiss" or "Skip" button**.
+            * The survey must only be shown **once per user**. After being shown (and either completed or dismissed), it should not appear again. Use local storage to track this state (e.g., `has_shown_pmf_survey = true`).
+
+        4.  **Analytics Tracking:**
+            * The app must track and send analytics events to the backend for the following actions:
+                * `survey_impression`: Fired when the user is shown the survey overlay.
+                * `survey_dismissed`: Fired when the user clicks the "Dismiss" or "Skip" button.
+                * `survey_completed`: Fired when the user successfully submits the survey form.
+        
+        Generate the code for all necessary files, including UI, logic, and analytics hooks.
+        """
         **Input Data:**
         -   **Target Platform(s):** {app_type} (options: 'ANDROID', 'IOS', 'BOTH')
         -   **Core User Persona Document:**
