@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiClient from '../services/api';
 import Card from '../components/ui/Card';
 import paymentService from '../services/paymentService';
+import { Loader2 } from 'lucide-react'; // Import for animated spinner
 
 interface ProjectDetails {
     id: number;
@@ -18,6 +20,7 @@ interface ProjectDetails {
         text_dark: string;
         background: string;
     };
+    status_message?: string; // Added status_message
 }
 
 const ProjectDetailPage = () => {
@@ -39,8 +42,23 @@ const ProjectDetailPage = () => {
                 setLoading(false);
             }
         };
+
         fetchProject();
-    }, [id]);
+
+        // Polling logic for status updates
+        const interval = setInterval(() => {
+            // Only poll if the project is in a pending or generation state
+            if (project && (project.status.includes('PENDING') || project.status.includes('GENERATION'))) {
+                apiClient.get(`/projects/${id}/`).then(response => {
+                    setProject(response.data);
+                }).catch(err => {
+                    console.error("Error polling project status:", err);
+                });
+            }
+        }, 5000); // Poll every 5 seconds
+
+        return () => clearInterval(interval); // Cleanup interval on component unmount
+    }, [id, project?.status]); // Re-run effect if ID or project status changes to adjust polling
 
     const handleMonetization = async () => {
         if (!project) return;
@@ -58,30 +76,37 @@ const ProjectDetailPage = () => {
     if (error) return <div className="text-center p-10 text-solar-orange">{error}</div>;
     if (!project) return <div className="text-center p-10 text-soft-white">Project not found.</div>;
 
+    const isUpdating = project.status.includes('PENDING') || project.status.includes('GENERATION');
+
     return (
         <div className="min-h-screen bg-quantum-black text-soft-white p-8">
-            <Link to="/dashboard" className="text-ion-blue hover:underline mb-8 block">&larr; Back to Dashboard</Link>
+            <Link to="/dashboard" className="text-ion-blue hover:underline mb-8 block animate-fade-in">&larr; Back to Dashboard</Link>
             
-            <h1 className="text-4xl font-bold mb-2">{project.name}</h1>
-            <p className="text-lg text-gray-400 mb-4">Status: <span className="font-semibold text-solar-orange">{project.status}</span></p>
-            <p className="mb-8">Source URL: <a href={project.source_url} target="_blank" rel="noopener noreferrer" className="text-ion-blue">{project.source_url}</a></p>
+            <h1 className="text-4xl font-bold mb-2 animate-slide-in-right">{project.name}</h1>
+            <p className="text-lg text-gray-400 mb-4">
+                Status: <span className="font-semibold text-solar-orange">
+                    {project.status_message || project.status}
+                    {isUpdating && <Loader2 size={18} className="inline-block ml-2 animate-spin text-ion-blue" />}
+                </span>
+            </p>
+            <p className="mb-8 animate-fade-in">Source URL: <a href={project.source_url} target="_blank" rel="noopener noreferrer" className="text-ion-blue hover:underline">{project.source_url}</a></p>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card className="p-6">
+                <Card className="p-6 animate-fade-in">
                     <h2 className="text-2xl font-bold mb-4">AI Market Analysis: User Persona</h2>
                     {project.user_persona_document ? (
-                        <pre className="whitespace-pre-wrap font-sans text-gray-300">{project.user_persona_document}</pre>
+                        <pre className="whitespace-pre-wrap font-sans text-gray-300 text-sm">{project.user_persona_document}</pre>
                     ) : (
                         <p className="text-gray-400">AI analysis is pending...</p>
                     )}
                 </Card>
-                <Card className="p-6">
+                <Card className="p-6 animate-fade-in delay-100">
                     <h2 className="text-2xl font-bold mb-4">AI Design Analysis: Brand Palette</h2>
                     {project.brand_palette ? (
                         <div className="space-y-3">
                             {Object.entries(project.brand_palette).map(([name, color]) => (
                                 <div key={name} className="flex items-center justify-between">
-                                    <span className="capitalize">{name}</span>
+                                    <span className="capitalize">{name.replace(/_/g, ' ')}</span>
                                     <div className="flex items-center gap-2">
                                         <span>{color}</span>
                                         <div className="w-6 h-6 rounded border border-gray-500" style={{ backgroundColor: color }}></div>
@@ -95,9 +120,9 @@ const ProjectDetailPage = () => {
                 </Card>
             </div>
 
-            {/* Monetization Section - Correctly placed outside the grid */}
+            {/* Monetization Section */}
             {project.status === 'DESIGN_COMPLETE' && (
-                 <Card className="mt-8 p-6">
+                 <Card className="mt-8 p-6 animate-fade-in delay-200">
                     <div className="flex flex-col md:flex-row items-center justify-between">
                         <div>
                             <h2 className="text-2xl font-bold">Ready for Launch?</h2>
@@ -116,24 +141,4 @@ const ProjectDetailPage = () => {
     );
 };
 
-useEffect(() => {
-    // Only poll if the project is in a pending state
-    if (project && (project.status.includes('PENDING') || project.status.includes('GENERATION'))) {
-        const interval = setInterval(() => {
-            // Silently refetch the project details
-            apiClient.get(`/projects/${id}/`).then(response => {
-                setProject(response.data);
-            });
-        }, 5000); // Poll every 5 seconds
-
-        // Cleanup interval on component unmount
-        return () => clearInterval(interval);
-    }
-}, [project, id]); // Rerun this effect if the project data changes
-
-// ... in the JSX, we will now display the status_message
-<p className="text-lg text-gray-400 mb-4">
-    Status: <span className="font-semibold text-solar-orange">{project.status_message || project.status}</span>
-</p>
-            
 export default ProjectDetailPage;
