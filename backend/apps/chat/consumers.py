@@ -1,10 +1,18 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from django.contrib.auth.models import AnonymousUser
+from rest_framework.authtoken.models import Token
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'chat_{self.room_name}'
+        self.user = self.scope.get('user', AnonymousUser())
+
+        if self.user.is_anonymous:
+            await self.close()
+            return
 
         # Join room group
         await self.channel_layer.group_add(
@@ -12,8 +20,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         await self.accept()
+        
+        # Announce user connection
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message': f"{self.user.username} has joined the chat.",
+                'sender': 'system'
+            }
+        )
 
     async def disconnect(self, close_code):
+        # Announce user disconnection
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message': f"{self.user.username} has left the chat.",
+                'sender': 'system'
+            }
+        )
         # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
@@ -31,20 +58,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat_message',
                 'message': message,
-                'sender': 'user'
+                'sender': self.user.username
             }
         )
         
         # Get response from AI agent
         # In a real scenario, this would call an agent task
-        ai_response = f"AI response to: {message}"
+        ai_response = f"Applause Prime: I have received your message: '{message}'"
         
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
                 'message': ai_response,
-                'sender': 'ai'
+                'sender': 'Applause Prime'
             }
         )
 
