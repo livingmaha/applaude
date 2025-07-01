@@ -1,5 +1,5 @@
-# File: /.github/workflows/ci-cd.yml
-name: Applause CI
+
+name: Applause CI/CD
 
 on:
   push:
@@ -38,3 +38,28 @@ jobs:
       run: |
         source venv/bin/activate
         cd backend && flake8 .
+
+  deploy-backend:
+    needs: [frontend-ci, backend-ci]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Only run on push to main
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to Production Server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PROD_HOST }}
+        username: ${{ secrets.PROD_USERNAME }}
+        key: ${{ secrets.PROD_SSH_KEY }}
+        script: |
+          cd /path/to/your/applause
+          git pull origin main
+          cd backend
+          source venv/bin/activate
+          pip install -r requirements.txt
+          python manage.py migrate
+          python manage.py collectstatic --noinput
+          sudo supervisorctl restart applause-gunicorn
+          sudo supervisorctl restart applause-celery
