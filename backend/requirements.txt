@@ -9,3 +9,4 @@ redis
 flake8
 channels
 channels-redis
+gunicorn
