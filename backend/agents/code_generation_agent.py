@@ -31,24 +31,45 @@ class CodeGenAgent(BaseAgent):
         try:
             with transaction.atomic():
                 project = Project.objects.select_for_update().get(id=project_id)
-                project.status_message = "Generating production-ready code..."
+                project.status_message = "Generating production-ready code with advanced features..."
                 project.status = Project.ProjectStatus.CODE_GENERATION # Set status to generation
                 project.save()
         except Project.DoesNotExist:
             print(f"Error: Project with ID {project_id} not found.")
             return
 
-        # 1. Gather all data
+        # 1. Gather all data, including new survey flags and questions
         user_persona = project.user_persona_document
         palette = project.brand_palette
         app_type = project.app_type
         source_url = project.source_url
+        enable_ux_survey = project.enable_ux_survey
+        ux_survey_questions = project.ux_survey_questions
+        enable_pmf_survey = project.enable_pmf_survey
+        pmf_survey_questions = project.pmf_survey_questions
+
+        # Placeholder PMF questions (as I cannot access external articles)
+        if not pmf_survey_questions:
+            pmf_survey_questions = [
+                {"id": 1, "question": "How would you feel if you could no longer use [App Name]?", "type": "radio", "options": ["Very disappointed", "Somewhat disappointed", "Not disappointed (it's not that useful)"]},
+                {"id": 2, "question": "What is the primary benefit you receive from [App Name]?", "type": "text"},
+                {"id": 3, "question": "How likely are you to recommend [App Name] to a friend or colleague?", "type": "nps", "scale": [0, 10]},
+                {"id": 4, "question": "What alternatives would you use if [App Name] were no longer available?", "type": "text"}
+            ]
+        if not ux_survey_questions:
+             ux_survey_questions = [
+                {"id": 1, "question": "How easy is it to navigate this app?", "type": "scale", "min": 1, "max": 5, "labels": ["Very Difficult", "Very Easy"]},
+                {"id": 2, "question": "What do you like most about the app?", "type": "text"},
+                {"id": 3, "question": "What could be improved?", "type": "text"},
+                {"id": 4, "question": "Overall, how satisfied are you with the app?", "type": "radio", "options": ["Very Satisfied", "Satisfied", "Neutral", "Dissatisfied", "Very Dissatisfied"]}
+            ]
+
 
         # 2. Construct the detailed task for the Gemini API with multi-step reasoning
         task_description = f"""
         **MISSION CRITICAL TASK: Generate a production-ready mobile application.**
 
-        You are the 'Master CodeSmith Agent'. Your objective is to translate a user's project specifications, user persona, and brand identity into fully functional, clean, and well-structured source code for a native mobile application.
+        You are the 'Quantum Architect & Award-Winning Mobile Engineer Agent'. Your objective is to translate a user's project specifications, user persona, and brand identity into fully functional, clean, and well-structured source code for a native mobile application. You will integrate cutting-edge feedback and analytics features to ensure the app constantly evolves to meet user needs and achieves product-market fit.
 
         **Input Data:**
         -   **Target Platform(s):** {app_type} (options: 'ANDROID', 'IOS', 'BOTH')
@@ -61,6 +82,10 @@ class CodeGenAgent(BaseAgent):
             {json.dumps(palette, indent=2)}
             ```
         -   **Original Website URL (for content/product context):** {source_url}
+        -   **User Experience (UX) Survey Enabled:** {enable_ux_survey}
+            -   **UX Survey Questions:** {json.dumps(ux_survey_questions, indent=2)}
+        -   **Product Market Fit (PMF) Survey Enabled:** {enable_pmf_survey}
+            -   **PMF Survey Questions:** {json.dumps(pmf_survey_questions, indent=2)}
 
         ---
 
@@ -70,13 +95,18 @@ class CodeGenAgent(BaseAgent):
         * Analyze the `Core User Persona Document` to explicitly state your understanding of the target user's primary needs, motivations, and pain points relevant to a mobile application.
         * Infer the *primary purpose* of the mobile application based on the user persona and the content implied by the `Original Website URL`. Is it an e-commerce app, a content consumption app, a service booking app, a utility app, etc.? Justify your inference.
 
-        **Step 2: Define Core App Logic and Key Features**
+        **Step 2: Define Core App Logic, Key Features, and Feedback Integration Strategy**
         * Based on the inferred primary purpose (from Step 1), define the essential functionalities (e.g., "display product catalog," "user authentication," "content search," "booking calendar").
         * Outline the minimal set of screens/views required to fulfill these core functionalities (e.g., "Home/Dashboard," "Detail View," "Profile," "Settings").
+        * **Crucially, define the strategy for integrating user feedback mechanisms within the app:**
+            * How will UX and PMF surveys be displayed (e.g., subtle in-app prompt, dedicated section, pop-up with dismiss option)? Design this to not overwhelm the user.
+            * How will survey responses, ratings, and general feedback be collected and transmitted securely to the backend?
+            * How will user interaction with survey prompts (saw, ignored, answered) be tracked for analytics?
 
         **Step 3: Propose Logical File Structure for {app_type}**
         * Outline a complete and professional file/folder structure for the `{app_type}` application.
-        * Include folders for UI components, screens/views, utilities, data models, and styling/theming.
+        * Include folders for UI components, screens/views, utilities, data models, networking, and styling/theming.
+        * **Explicitly include structure for the Survey/Feedback module.**
 
         **Step 4: Generate Code - Detailed Implementation**
         * Generate the full, production-ready source code for each file identified in Step 3.
@@ -84,6 +114,7 @@ class CodeGenAgent(BaseAgent):
         * **Crucially, integrate the `Brand Color Palette` into a dedicated theme/style file.** All UI elements in the generated code MUST reference colors from this palette, not hardcoded values.
         * For content, use placeholder data that aligns with the inferred app purpose (e.g., `dummyProducts`, `sampleArticles`).
         * Ensure the code is clean, well-commented, and follows best practices for {app_type} development (e.g., for Android, use Kotlin; for iOS, use Swift; if 'BOTH', default to a simple Flutter structure unless specified otherwise, but prioritize native if `app_type` is explicit `ANDROID` or `IOS`).
+        * **Implement the survey display and data collection features.** Provide a clear button for users to trigger the survey, and a dismiss option for pop-ups. Include tracking logic.
         * The output format MUST be a series of distinct code blocks, each clearly preceded by its file path.
 
         ---
@@ -111,29 +142,38 @@ class CodeGenAgent(BaseAgent):
             # Simulate API call
             # In a real application, this would call self.model.generate_content(full_prompt)
             # For this exercise, we will simulate the expected output structure.
-            # The actual response will be very large and context-dependent.
+            # The actual response will be very large and context-dependent,
+            # especially with the new survey features.
 
             # This is a simplified simulation of the actual code generation.
-            # A real model output would be much more extensive and detailed.
+            # A real model output would be much more extensive and detailed,
+            # explicitly including files for survey UI, data models, and API integration.
             simulated_code_output = f"""
             **Step 1: Deconstruct the Persona and Website Intent**
-            * **Understanding of User Persona:** The persona "Startup Steve" indicates a tech-savvy entrepreneur focused on scaling his e-commerce business and enhancing customer engagement via the content from `{source_url}`. He values efficiency and effective customer interaction.
-            * **Inferred Primary Purpose:** Given the focus on e-commerce and customer engagement, the primary purpose of the mobile application is to serve as a **mobile storefront/content delivery platform** for Steve's e-commerce business, allowing customers to browse products/content, make purchases, and receive updates directly on their mobile devices.
+            * **Understanding of User Persona:** The persona "Digital Nomad Diana" indicates a user who is highly mobile, values efficiency, seamless integration, and clean interfaces for managing her professional and digital life. She seeks instant access and reliable tools to navigate her travel-heavy lifestyle.
+            * **Inferred Primary Purpose:** The mobile application's primary purpose is to serve as a **highly efficient mobile companion for digital professionals**, extending the core functionalities of `{source_url}` into a native, offline-capable, and intuitively designed mobile experience. It's about empowering Diana to manage her work and engagement on the go.
 
-            **Step 2: Define Core App Logic and Key Features**
+            **Step 2: Define Core App Logic, Key Features, and Feedback Integration Strategy**
             * **Essential Functionalities:**
-                * Displaying a product/content catalog.
-                * Viewing product/content details.
-                * User authentication (login/signup).
-                * Basic shopping cart functionality (if e-commerce).
+                * Secure User Authentication & Profile Management.
+                * Access to core content/products/services from `{source_url}`.
+                * Push Notifications for critical updates.
+                * **Integrated Feedback & Survey Module:**
+                    * UX and PMF Surveys with dynamic question rendering.
+                    * In-app rating collection.
+                    * Textual feedback submission.
             * **Minimal Screens/Views:**
                 * `AuthScreen` (Login/Signup)
-                * `HomeScreen` (Product/Content List)
-                * `DetailScreen` (Individual Product/Content Details)
-                * `ProfileScreen` (Basic user information)
+                * `Dashboard/Home Screen` (Main content, quick actions)
+                * `Content/Product Detail Screen`
+                * `Profile/Settings Screen`
+                * `Survey/Feedback Module` (Accessible via dedicated section and/or subtle, dismissible pop-ups).
+            * **Feedback Integration Strategy:**
+                * **Survey Display:** A subtle, non-intrusive pop-up will appear after a user completes a certain action or has spent a minimum time in the app, with a clear 'Dismiss' button and a 'Don't show again' option. A dedicated 'Feedback' section will also be available in the app settings.
+                * **Data Collection:** Survey responses, ratings, and text feedback will be collected via secure API calls to the Applause backend, validated, and timestamped.
+                * **Tracking:** Each survey impression (saw), interaction (ignored, clicked), and completion (answered) will be logged to provide granular analytics on user engagement with feedback prompts.
 
             **Step 3: Propose Logical File Structure for {app_type}**
-            * Given `{app_type}`, assuming a native approach (Kotlin for Android, Swift for iOS). If `BOTH` is selected, a simplified Flutter structure.
             * **For Android (Kotlin):**
                 ```
                 app/
@@ -143,45 +183,28 @@ class CodeGenAgent(BaseAgent):
                 │       │   └── com/yourcompany/yourapp/
                 │       │       ├── MainActivity.kt
                 │       │       ├── ui/
-                │       │       │   ├── theme/
-                │       │       │   │   ├── Color.kt
-                │       │       │   │   ├── Theme.kt
-                │       │       │   │   └── Type.kt
-                │       │       │   ├── screens/
-                │       │       │   │   ├── AuthScreen.kt
-                │       │       │   │   ├── HomeScreen.kt
-                │       │       │   │   └── DetailScreen.kt
-                │       │       │   └── components/
-                │       │       │       └── ProductCard.kt
+                │       │       │   ├── theme/ # Color, Theme, Type
+                │       │       │   ├── screens/ # AuthScreen, HomeScreen, DetailScreen, ProfileScreen
+                │       │       │   ├── components/ # Generic UI components
+                │       │       │   └── feedback/ # NEW: SurveyDialog, FeedbackScreen, RatingComponent
                 │       │       ├── data/
-                │       │       │   ├── model/
-                │       │       │   │   └── Product.kt
-                │       │       │   └── repository/
-                │       │       │       └── ProductRepository.kt
-                │       │       └── util/
-                │       │           └── Constants.kt
+                │       │       │   ├── model/ # Product, User, SurveyResponse, AppRating, Feedback
+                │       │       │   └── repository/ # Repository for data access including feedback submission
+                │       │       ├── network/ # API service for backend communication
+                │       │       └── util/ # Constants, AnalyticsLogger (for survey interaction tracking)
                 │       └── res/
-                │           ├── drawable/
-                │           ├── layout/
-                │           └── values/
                 └── build.gradle
                 ```
             * **For iOS (SwiftUI):**
                 ```
                 YourAppName/
                 ├── YourAppNameApp.swift
-                ├── Views/
-                │   ├── AuthView.swift
-                │   ├── HomeView.swift
-                │   └── DetailView.swift
-                ├── Components/
-                │   └── ProductRow.swift
-                ├── Models/
-                │   └── Product.swift
-                ├── Services/
-                │   └── APIService.swift
-                └── Theme/
-                    └── ColorPalette.swift
+                ├── Views/ # AuthView, HomeView, DetailView, ProfileView
+                ├── Components/ # Generic UI components
+                ├── Feedback/ # NEW: SurveyPromptView, FeedbackView, RatingView, SurveyModels.swift
+                ├── Models/ # Product, User, SurveyResponse, AppRating, Feedback
+                ├── Services/ # API service for backend communication, AnalyticsService (for survey tracking)
+                └── Theme/ # ColorPalette.swift
                 ```
 
             **Step 4: Generate Code - Detailed Implementation**
@@ -197,6 +220,7 @@ class CodeGenAgent(BaseAgent):
             val TextLight = Color(0xFF{palette['text_light'][1:]})
             val TextDark = Color(0xFF{palette['text_dark'][1:]})
             val BackgroundColor = Color(0xFF{palette['background'][1:]})
+            val AccentColor = Color(0xFFE500FF) // Example for contrast elements
             ```
 
             ```kotlin
@@ -218,6 +242,7 @@ class CodeGenAgent(BaseAgent):
                 onSecondary = TextLight,
                 onBackground = TextLight,
                 onSurface = TextLight,
+                tertiary = AccentColor // Using accent for tertiary
             )
 
             private val LightColorScheme = lightColorScheme(
@@ -229,6 +254,7 @@ class CodeGenAgent(BaseAgent):
                 onSecondary = TextDark,
                 onBackground = TextDark,
                 onSurface = TextDark,
+                tertiary = AccentColor // Using accent for tertiary
             )
 
             @Composable
@@ -243,159 +269,276 @@ class CodeGenAgent(BaseAgent):
 
                 MaterialTheme(
                     colorScheme = colorScheme,
-                    typography = Type,
+                    typography = Type, // Assuming Type.kt exists for typography
                     content = content
                 )
             }
             ```
 
             ```kotlin
-            // File: app/src/main/java/com/yourcompany/yourapp/data/model/Product.kt
+            // File: app/src/main/java/com/yourcompany/yourapp/data/model/Survey.kt
             package com.yourcompany.yourapp.data.model
 
-            data class Product(
-                val id: String,
-                val name: String,
-                val description: String,
-                val imageUrl: String,
-                val price: String
+            // Represents a single question in a survey
+            data class SurveyQuestion(
+                val id: Int,
+                val question: String,
+                val type: String, // e.g., "text", "radio", "scale", "nps"
+                val options: List<String>? = null, // For radio/dropdown
+                val min: Int? = null, // For scale
+                val max: Int? = null, // For scale
+                val labels: List<String>? = null // For scale labels
+            )
+
+            // Represents a user's response to a survey
+            data class SurveyResponse(
+                val projectId: String,
+                val userId: String,
+                val surveyType: String, // "UX" or "PMF"
+                val responses: Map<String, Any>, // Map of question ID to answer
+                val timestamp: Long
+            )
+
+            // Represents an app rating
+            data class AppRating(
+                val projectId: String,
+                val userId: String,
+                val rating: Int, // e.g., 1-5 stars
+                val comment: String? = null,
+                val timestamp: Long
+            )
+
+            // Represents general user feedback
+            data class UserFeedback(
+                val projectId: String,
+                val userId: String,
+                val feedbackText: String,
+                val timestamp: Long
             )
             ```
 
             ```kotlin
-            // File: app/src/main/java/com/yourcompany/yourapp/ui/screens/HomeScreen.kt
-            package com.yourcompany.yourapp.ui.screens
+            // File: app/src/main/java/com/yourcompany/yourapp/ui/feedback/SurveyDisplay.kt
+            package com.yourcompany.yourapp.ui.feedback
 
-            import androidx.compose.foundation.clickable
+            import androidx.compose.animation.AnimatedVisibility
+            import androidx.compose.animation.fadeIn
+            import androidx.compose.animation.fadeOut
+            import androidx.compose.foundation.background
             import androidx.compose.foundation.layout.*
-            import androidx.compose.foundation.lazy.LazyColumn
-            import androidx.compose.foundation.lazy.items
             import androidx.compose.material3.*
-            import androidx.compose.runtime.Composable
+            import androidx.compose.runtime.*
+            import androidx.compose.ui.Alignment
             import androidx.compose.ui.Modifier
-            import androidx.compose.ui.layout.ContentScale
+            import androidx.compose.ui.graphics.Color
             import androidx.compose.ui.unit.dp
-            import coil.compose.AsyncImage
-            import com.yourcompany.yourapp.data.model.Product
+            import com.yourcompany.yourapp.data.model.SurveyQuestion
+            import com.yourcompany.yourapp.ui.theme.BackgroundColor
+            import com.yourcompany.yourapp.ui.theme.PrimaryColor
+            import com.yourcompany.yourapp.ui.theme.TextLight
 
-            @OptIn(ExperimentalMaterial3Api::class)
             @Composable
-            fun HomeScreen(onProductClick: (Product) -> Unit) {
-                // Placeholder data for demonstration
-                val products = listOf(
-                    Product("1", "Product A", "Description for A.", "[https://via.placeholder.com/150](https://via.placeholder.com/150)", "$19.99"),
-                    Product("2", "Product B", "Description for B.", "[https://via.placeholder.com/150](https://via.placeholder.com/150)", "$29.99"),
-                    Product("3", "Product C", "Description for C.", "[https://via.placeholder.com/150](https://via.placeholder.com/150)", "$39.99")
-                )
+            fun SurveyPromptDialog(
+                isVisible: Boolean,
+                onDismiss: () -> Unit,
+                onSurveyClick: () -> Unit,
+                surveyTitle: String = "Quick Feedback!"
+            ) {
+                AnimatedVisibility(
+                    visible = isVisible,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    AlertDialog(
+                        onDismissRequest = onDismiss,
+                        title = { Text(surveyTitle, color = TextLight) },
+                        text = { Text("Help us improve by answering a short survey.", color = TextLight) },
+                        confirmButton = {
+                            Button(
+                                onClick = onSurveyClick,
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                            ) {
+                                Text("Start Survey", color = Color.White)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = onDismiss) {
+                                Text("Not Now", color = TextLight)
+                            }
+                        },
+                        containerColor = BackgroundColor
+                    )
+                }
+            }
+
+            @Composable
+            fun SurveyScreen(
+                surveyQuestions: List<SurveyQuestion>,
+                onSubmit: (Map<String, Any>) -> Unit,
+                onClose: () -> Unit,
+                surveyType: String
+            ) {
+                var currentResponses by remember { mutableStateOf<MutableMap<String, Any>>(mutableMapOf()) }
 
                 Scaffold(
                     topBar = {
-                        TopAppBar(title = { Text("Our Products", color = MaterialTheme.colorScheme.onPrimary) },
-                            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary))
+                        TopAppBar(
+                            title = { Text("$surveyType Survey", color = TextLight) },
+                            colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryColor),
+                            navigationIcon = {
+                                IconButton(onClick = onClose) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close", tint = TextLight)
+                                }
+                            }
+                        )
                     }
                 ) { paddingValues ->
-                    LazyColumn(
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(16.dp)
+                            .background(BackgroundColor)
                     ) {
-                        items(products) { product ->
-                            ProductCard(product = product, onClick = { onProductClick(product) })
+                        surveyQuestions.forEach { question ->
+                            QuestionView(question = question, onAnswer = { answer ->
+                                currentResponses[question.id.toString()] = answer
+                            }, currentAnswer = currentResponses[question.id.toString()])
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                        Button(
+                            onClick = { onSubmit(currentResponses) },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                        ) {
+                            Text("Submit Survey", color = Color.White)
                         }
                     }
                 }
             }
 
             @Composable
-            fun ProductCard(product: Product, onClick: () -> Unit) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onClick),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        AsyncImage(
-                            model = product.imageUrl,
-                            contentDescription = product.name,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = product.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = product.price,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
+            fun QuestionView(question: SurveyQuestion, onAnswer: (Any) -> Unit, currentAnswer: Any?) {
+                Column {
+                    Text(question.question, style = MaterialTheme.typography.titleMedium, color = TextLight)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    when (question.type) {
+                        "text" -> {
+                            OutlinedTextField(
+                                value = currentAnswer as? String ?: "",
+                                onValueChange = { onAnswer(it) },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Your answer") },
+                                colors = TextFieldDefaults.outlinedTextFieldColors(
+                                    focusedBorderColor = PrimaryColor,
+                                    unfocusedBorderColor = TextLight.copy(alpha = 0.5f),
+                                    textColor = TextLight,
+                                    cursorColor = PrimaryColor
+                                )
+                            )
+                        }
+                        "radio" -> {
+                            question.options?.forEach { option ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = (currentAnswer as? String) == option,
+                                        onClick = { onAnswer(option) },
+                                        colors = RadioButtonDefaults.colors(selectedColor = PrimaryColor)
+                                    )
+                                    Text(option, color = TextLight)
+                                }
+                            }
+                        }
+                        "scale" -> {
+                            val selectedValue = (currentAnswer as? Float) ?: (question.min?.toFloat() ?: 1f)
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Slider(
+                                    value = selectedValue,
+                                    onValueChange = { onAnswer(it) },
+                                    valueRange = question.min?.toFloat() ?: 1f .. question.max?.toFloat() ?: 5f,
+                                    steps = (question.max ?: 5) - (question.min ?: 1) - 1,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = PrimaryColor,
+                                        activeTrackColor = PrimaryColor,
+                                        inactiveTrackColor = TextLight.copy(alpha = 0.3f)
+                                    )
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    question.labels?.forEach { label ->
+                                        Text(label, style = MaterialTheme.typography.bodySmall, color = TextLight)
+                                    }
+                                }
+                            }
+                        }
+                        "nps" -> {
+                            val selectedValue = (currentAnswer as? Float) ?: 0f
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Slider(
+                                    value = selectedValue,
+                                    onValueChange = { onAnswer(it.toInt()) }, // NPS usually integer
+                                    valueRange = question.min?.toFloat() ?: 0f .. question.max?.toFloat() ?: 10f,
+                                    steps = (question.max ?: 10) - (question.min ?: 0) - 1,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = PrimaryColor,
+                                        activeTrackColor = PrimaryColor,
+                                        inactiveTrackColor = TextLight.copy(alpha = 0.3f)
+                                    )
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Not Likely (0)", style = MaterialTheme.typography.bodySmall, color = TextLight)
+                                    Text("Very Likely (10)", style = MaterialTheme.typography.bodySmall, color = TextLight)
+                                }
+                            }
+                        }
                     }
                 }
             }
             ```
 
             ```kotlin
-            // File: app/src/main/java/com/yourcompany/yourapp/MainActivity.kt
-            package com.yourcompany.yourapp
+            // File: app/src/main/java/com/yourcompany/yourapp/util/AnalyticsLogger.kt
+            package com.yourcompany.yourapp.util
 
-            import android.os.Bundle
-            import androidx.activity.ComponentActivity
-            import androidx.activity.compose.setContent
-            import androidx.compose.foundation.layout.fillMaxSize
-            import androidx.compose.material3.Surface
-            import androidx.compose.runtime.Composable
-            import androidx.compose.ui.Modifier
-            import androidx.navigation.compose.NavHost
-            import androidx.navigation.compose.composable
-            import androidx.navigation.compose.rememberNavController
-            import com.yourcompany.yourapp.data.model.Product
-            import com.yourcompany.yourapp.ui.screens.DetailScreen
-            import com.yourcompany.yourapp.ui.screens.HomeScreen
-            import com.yourcompany.yourapp.ui.theme.YourAppTheme
+            import android.util.Log
 
-            class MainActivity : ComponentActivity() {
-                override fun onCreate(savedInstanceState: Bundle?) {
-                    super.onCreate(savedInstanceState)
-                    setContent {
-                        YourAppTheme {
-                            Surface(
-                                modifier = Modifier.fillMaxSize(),
-                                color = MaterialTheme.colorScheme.background
-                            ) {
-                                AppNavigation()
-                            }
-                        }
-                    }
+            object AnalyticsLogger {
+                private const val TAG = "AppAnalytics"
+
+                fun logSurveyEvent(eventId: String, projectId: String, userId: String, details: Map<String, Any>? = null) {
+                    val logMessage = "Event: $eventId, Project: $projectId, User: $userId"
+                    val fullMessage = if (details != null) "$logMessage, Details: $details" else logMessage
+                    Log.d(TAG, fullMessage)
+                    // In a real app, send this to a backend analytics service
                 }
             }
+            ```
 
-            @Composable
-            fun AppNavigation() {
-                val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "home") {
-                    composable("home") {
-                        HomeScreen(onProductClick = { product ->
-                            navController.navigate("detail/${product.id}") {
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        })
-                    }
-                    composable("detail/{productId}") { backStackEntry ->
-                        val productId = backStackEntry.arguments?.getString("productId")
-                        // In a real app, you would fetch product details using productId
-                        // For this example, we'll pass dummy data or assume fetched
-                        DetailScreen(productId = productId ?: "unknown")
-                    }
-                }
+            ```kotlin
+            // File: app/src/main/java/com/yourcompany/yourapp/network/AppApiService.kt
+            package com.yourcompany.yourapp.network
+
+            import com.yourcompany.yourapp.data.model.SurveyResponse
+            import com.yourcompany.yourapp.data.model.AppRating
+            import com.yourcompany.yourapp.data.model.UserFeedback
+            import retrofit2.http.Body
+            import retrofit2.http.POST
+
+            // Placeholder for API service for submitting feedback and survey data
+            interface AppApiService {
+                @POST("api/app-feedback/survey-response/")
+                suspend fun submitSurveyResponse(@Body response: SurveyResponse): retrofit2.Response<Void>
+
+                @POST("api/app-feedback/app-rating/")
+                suspend fun submitAppRating(@Body rating: AppRating): retrofit2.Response<Void>
+
+                @POST("api/app-feedback/user-feedback/")
+                suspend fun submitUserFeedback(@Body feedback: UserFeedback): retrofit2.Response<Void>
             }
             ```
             """
@@ -406,11 +549,11 @@ class CodeGenAgent(BaseAgent):
             with transaction.atomic():
                 project = Project.objects.select_for_update().get(id=project_id)
                 project.status = Project.ProjectStatus.COMPLETED
-                project.status_message = "Code generation complete. App is ready for download!"
+                project.status_message = "Code generation complete. App is ready for download with integrated feedback features!"
                 # Potentially store a link to the generated code artifact here
                 project.save()
 
-            print(f"Code Generation complete for project {project_id}. Project is now marked as COMPLETED.")
+            print(f"Code Generation complete for project {project_id}. Project is now marked as COMPLETED with new features.")
 
         except Exception as e:
             with transaction.atomic():
