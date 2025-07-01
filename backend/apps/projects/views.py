@@ -1,3 +1,4 @@
+# backend/apps/projects/views.py
 from rest_framework import viewsets, permissions
 from .models import Project
 from .serializers import ProjectSerializer
