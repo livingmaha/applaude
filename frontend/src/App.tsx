@@ -11,7 +11,7 @@ import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProtectedRoute from './components/core/ProtectedRoute';
 import AboutPage from './pages/AboutPage';
 import LandingPage from './pages/LandingPage';
-
+import ProfilePage from './pages/ProfilePage'; // Import the new page
 
 function App() {
   return (
@@ -27,9 +27,9 @@ function App() {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<ProfilePage />} /> {/* Add profile route */}
             <Route path="/projects/create" element={<CreateProjectPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            {/* The original onboarding conversational flow can be integrated here later */}
           </Route>
         </Routes>
       </Router>
