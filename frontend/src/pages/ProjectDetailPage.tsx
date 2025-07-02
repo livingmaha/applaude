@@ -8,7 +8,8 @@ import { AuthContext } from '../contexts/AuthContext';
 import ChatWindow from '../components/core/ChatWindow';
 import paymentService from '../services/paymentService';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
+import { Switch } from '../components/ui/Switch'; // Assuming a new Switch component
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface ProjectDetails {
     id: number;
@@ -25,10 +26,8 @@ interface ProjectDetails {
         background: string;
     };
     status_message?: string;
-    enable_ux_survey?: boolean;
-    ux_survey_questions?: any[];
-    enable_pmf_survey?: boolean;
-    pmf_survey_questions?: any[];
+    enable_ux_survey: boolean;
+    enable_pmf_survey: boolean;
     app_ratings_summary?: any;
     user_feedback_summary?: any;
     survey_response_analytics?: any;
@@ -39,15 +38,12 @@ const ProjectDetailPage = () => {
     const [project, setProject] = useState<ProjectDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showSurveyConfig, setShowSurveyConfig] = useState(false);
-    const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
     const authContext = useContext(AuthContext);
     if (!authContext) {
         throw new Error("ProjectDetailPage must be used within an AuthProvider");
     }
     const { openPaymentConversation } = authContext;
-
 
     const fetchProject = async () => {
         if (!id) return;
@@ -62,7 +58,6 @@ const ProjectDetailPage = () => {
         }
     };
 
-
     useEffect(() => {
         fetchProject();
         const interval = setInterval(fetchProject, 5000); // Poll every 5 seconds
@@ -72,14 +67,11 @@ const ProjectDetailPage = () => {
     const handleSurveyToggle = async (surveyType: 'ux' | 'pmf') => {
         if (!project) return;
         const fieldName = surveyType === 'ux' ? 'enable_ux_survey' : 'enable_pmf_survey';
-        const newStatus = !(project as any)[fieldName];
+        const newStatus = !project[fieldName];
 
         try {
-            await apiClient.patch(`/projects/${project.id}/`, {
-                [fieldName]: newStatus
-            });
-            setProject(prev => prev ? { ...prev, [fieldName]: newStatus } : null);
-            alert(`${surveyType.toUpperCase()} Survey ${newStatus ? 'enabled' : 'disabled'}! The Code Generation Agent will incorporate this in the next app update.`);
+            const response = await apiClient.patch(`/projects/${project.id}/`, { [fieldName]: newStatus });
+            setProject(response.data);
         } catch (err) {
             setError(`Failed to update ${surveyType} survey status.`);
             console.error(err);
@@ -105,52 +97,51 @@ const ProjectDetailPage = () => {
     const chartData = project.app_ratings_summary ? Object.keys(project.app_ratings_summary).map(key => ({ name: `${key} Stars`, value: project.app_ratings_summary[key] })) : [];
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
 
-
     return (
         <div className="min-h-screen bg-quantum-black text-soft-white p-4 md:p-8">
             <Link to="/dashboard" className="text-ion-blue hover:underline mb-8 block animate-fade-in">&larr; Back to Dashboard</Link>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column */}
-                <div className="lg:col-span-2">
-                    <h1 className="text-4xl font-bold mb-2 animate-slide-in-right">{project.name}</h1>
-                    <p className="text-lg text-gray-400 mb-4">
-                        Status: <span className="font-semibold text-solar-orange">
-                            {project.status_message || project.status}
-                            {renderStatusIcon(project.status)}
-                        </span>
-                    </p>
-                    <p className="mb-8 animate-fade-in">Source URL: <a href={project.source_url} target="_blank" rel="noopener noreferrer" className="text-ion-blue hover:underline">{project.source_url}</a></p>
-
-                    <div className="space-y-8">
-                        <Card className="p-6 animate-fade-in">
-                            <h2 className="text-2xl font-bold mb-4">AI Market Analysis: User Persona</h2>
-                            <pre className="whitespace-pre-wrap font-sans text-gray-300 text-sm max-h-60 overflow-y-auto">{project.user_persona_document || "AI analysis is pending..."}</pre>
-                        </Card>
-
-                        {isGenerationComplete && (
-                            <Card className="mt-8 p-6 animate-fade-in">
-                                <h2 className="text-2xl font-bold mb-4">User Feedback & Analytics</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="p-4 bg-black bg-opacity-30 rounded-lg">
-                                        <h3 className="text-xl font-semibold mb-2 flex items-center"><BarChart2 size={20} className="mr-2" /> App Ratings</h3>
-                                        <ResponsiveContainer width="100%" height={300}>
-                                            <PieChart>
-                                                <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
-                                                    {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                                </Pie>
-                                                <Tooltip />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    <div className="p-4 bg-black bg-opacity-30 rounded-lg">
-                                        <h3 className="text-xl font-semibold mb-2 flex items-center"><MessageSquareText size={20} className="mr-2" /> User Feedback Summary</h3>
-                                        <pre className="whitespace-pre-wrap font-sans text-gray-300 text-sm max-h-60 overflow-y-auto">{project.user_feedback_summary || "No textual feedback collected yet."}</pre>
-                                    </div>
-                                </div>
-                            </Card>
-                        )}
+                <div className="lg:col-span-2 space-y-8">
+                    <div>
+                        <h1 className="text-4xl font-bold mb-2 animate-slide-in-right">{project.name}</h1>
+                        <p className="text-lg text-gray-400 mb-4">
+                            Status: <span className="font-semibold text-solar-orange">
+                                {project.status_message || project.status}
+                                {renderStatusIcon(project.status)}
+                            </span>
+                        </p>
+                        <p className="mb-8 animate-fade-in">Source URL: <a href={project.source_url} target="_blank" rel="noopener noreferrer" className="text-ion-blue hover:underline">{project.source_url}</a></p>
                     </div>
+
+                    <Card className="p-6 animate-fade-in">
+                        <h2 className="text-2xl font-bold mb-4">AI Market Analysis: User Persona</h2>
+                        <pre className="whitespace-pre-wrap font-sans text-gray-300 text-sm max-h-60 overflow-y-auto">{project.user_persona_document || "AI analysis is pending..."}</pre>
+                    </Card>
+
+                    {isGenerationComplete && (
+                        <Card className="p-6 animate-fade-in">
+                            <h2 className="text-2xl font-bold mb-4">User Feedback & Analytics</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-4 bg-black bg-opacity-30 rounded-lg">
+                                    <h3 className="text-xl font-semibold mb-2 flex items-center"><BarChart2 size={20} className="mr-2" /> App Ratings</h3>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
+                                                {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                            </Pie>
+                                            <Tooltip />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="p-4 bg-black bg-opacity-30 rounded-lg">
+                                    <h3 className="text-xl font-semibold mb-2 flex items-center"><MessageSquareText size={20} className="mr-2" /> User Feedback Summary</h3>
+                                    <pre className="whitespace-pre-wrap font-sans text-gray-300 text-sm max-h-60 overflow-y-auto">{project.user_feedback_summary || "No textual feedback collected yet."}</pre>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
                 </div>
 
                 {/* Right Column (Simulator and Actions) */}
@@ -162,11 +153,8 @@ const ProjectDetailPage = () => {
                                 {isGenerationComplete ? (
                                     <>
                                         <h3 className="font-bold text-lg mb-2" style={{ color: project.brand_palette?.text_dark }}>Welcome to {project.name}</h3>
-                                        <p className="text-sm mb-4" style={{ color: project.brand_palette?.text_dark }}>This is an interactive preview. Click below to test functionality.</p>
-                                        <button
-                                            className="px-4 py-2 rounded-lg text-white font-bold"
-                                            style={{ backgroundColor: project.brand_palette?.primary }}
-                                        >
+                                        <p className="text-sm mb-4" style={{ color: project.brand_palette?.text_dark }}>This is an interactive preview.</p>
+                                        <button className="px-4 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: project.brand_palette?.primary }}>
                                             Get Started
                                         </button>
                                     </>
@@ -181,6 +169,28 @@ const ProjectDetailPage = () => {
                     </Card>
 
                     <Card className="p-6">
+                        <h2 className="text-2xl font-bold mb-4 flex items-center"><SlidersHorizontal size={22} className="mr-2" /> Feedback Engine</h2>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label htmlFor="ux-survey-toggle" className="font-semibold text-gray-300">Enable UX Survey</label>
+                                <Switch
+                                    id="ux-survey-toggle"
+                                    checked={project.enable_ux_survey}
+                                    onCheckedChange={() => handleSurveyToggle('ux')}
+                                />
+                            </div>
+                             <div className="flex items-center justify-between">
+                                <label htmlFor="pmf-survey-toggle" className="font-semibold text-gray-300">Enable Product-Market Fit Survey</label>
+                                <Switch
+                                    id="pmf-survey-toggle"
+                                    checked={project.enable_pmf_survey}
+                                    onCheckedChange={() => handleSurveyToggle('pmf')}
+                                />
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="p-6">
                         <h2 className="text-2xl font-bold mb-4">Deployment</h2>
                         <div className="space-y-4">
                             <button
@@ -191,7 +201,7 @@ const ProjectDetailPage = () => {
                                 <Upload size={20} /> Deploy to App Store
                             </button>
                             <button
-                                onClick={() => openPaymentConversation(project.id)}
+                                onClick={() => alert('Code download initiated!')}
                                 disabled={!isGenerationComplete}
                                 className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
                             >
