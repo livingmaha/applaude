@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
@@ -19,13 +18,13 @@ const CreateProjectPage = () => {
         setLoading(true);
 
         try {
-            await apiClient.post('/projects/', {
+            const response = await apiClient.post('/projects/', {
                 name: name,
                 source_url: sourceUrl,
                 app_type: appType,
             });
-            // On success, navigate back to the dashboard to see the new project
-            navigate('/dashboard');
+            // On success, navigate to the new build and preview page
+            navigate(`/projects/${response.data.id}/build`);
         } catch (err: any) {
             setError('Failed to create project. Please check the details and try again.');
             console.error(err);
