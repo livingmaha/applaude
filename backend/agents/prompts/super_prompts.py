@@ -1,14 +1,12 @@
 """
 ================================================================================
-================== APPLAUSE AI AGENT SUPER PROMPTS (v2.0) ======================
+================== APPLAUSE AI AGENT SUPER PROMPTS (v3.0) ======================
 ================================================================================
 This file contains the master system prompts for the specialized AI agents
 powering the Applause platform. Each prompt has been meticulously engineered
 to elicit world-class performance from Google's Gemini API, incorporating
 deepened personas, step-by-step reasoning frameworks, and strict output
 constraints.
-
-Authored by: Super Prompter & AI Agent Architect
 ================================================================================
 """
 
