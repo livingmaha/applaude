@@ -1,3 +1,4 @@
+// File: frontend/src/components/layout/Header.tsx
 import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MobileNav from './MobileNav';
@@ -5,23 +6,24 @@ import { AuthContext } from '../../contexts/AuthContext';
 import { MessageSquare } from 'lucide-react';
 import ChatWindow from '../core/ChatWindow';
 import paymentService from '../../services/paymentService';
+import logoIcon from '../../assets/images/logo_icon.png'; // Import the logo image
 
 const Header = () => {
     const authContext = useContext(AuthContext);
     if (!authContext) throw new Error("Header must be within AuthProvider");
-    const { 
-        isAuthenticated, 
-        isSubscribed, 
-        isPaymentModalOpen, 
-        closePaymentConversation, 
-        paymentConversation, 
-        sendPaymentMessage 
+    const {
+        isAuthenticated,
+        isSubscribed,
+        isPaymentModalOpen,
+        closePaymentConversation,
+        paymentConversation,
+        sendPaymentMessage
     } = authContext;
 
     return (
         <header className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-30">
             <Link to="/" className="flex items-center gap-2">
-                <img src="/logo_icon.png" alt="Applause Logo" className="w-8 h-8" />
+                <img src={logoIcon} alt="Applause Logo" className="w-8 h-8" />
                 <span className="text-2xl font-bold text-soft-white">Applause</span>
             </Link>
             <nav className="space-x-6 hidden md:flex items-center">
@@ -55,7 +57,7 @@ const Header = () => {
             {isPaymentModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 animate-fade-in">
                     <div className="relative w-full max-w-2xl">
-                         <button 
+                         <button
                             onClick={closePaymentConversation}
                             className="absolute top-0 right-0 mt-4 mr-4 text-soft-white hover:text-ion-blue z-10 text-2xl font-bold"
                          >
