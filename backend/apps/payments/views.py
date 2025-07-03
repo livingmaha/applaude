@@ -38,6 +38,10 @@ class InitializePaymentView(APIView):
         except Project.DoesNotExist:
             return Response({'error': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        if request.user.is_superuser:
+            run_code_generation.delay(project.id)
+            return Response({'message': 'Superuser access granted. Code generation initiated.'}, status=status.HTTP_200_OK)
+
         amount = PLAN_PRICES[plan_type]
         email = request.user.email
         
