@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.conf import settings
 
@@ -21,6 +20,12 @@ class Project(models.Model):
         FAILED = 'FAILED', 'Failed'
         UPDATE_PENDING = 'UPDATE_PENDING', 'Update Pending'
 
+    class DeploymentOption(models.TextChoices):
+        NOT_CHOSEN = 'NOT_CHOSEN', 'Not Chosen'
+        APPLAUSE = 'APPLAUSE', 'Applause'
+        APP_STORE = 'APP_STORE', 'App Store'
+        PLAY_STORE = 'PLAY_STORE', 'Play Store'
+
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='projects')
     name = models.CharField(max_length=255)
     source_url = models.URLField(max_length=500)
@@ -41,6 +46,14 @@ class Project(models.Model):
     app_ratings_summary = models.JSONField(blank=True, null=True, help_text="Aggregated app ratings (e.g., {5: count, 4: count...})")
     user_feedback_summary = models.JSONField(blank=True, null=True, help_text="Summarized user textual feedback.")
     survey_response_analytics = models.JSONField(blank=True, null=True, help_text="Aggregated analytics from survey responses.")
+    
+    # Deployment
+    deployment_option = models.CharField(
+        max_length=20,
+        choices=DeploymentOption.choices,
+        default=DeploymentOption.NOT_CHOSEN,
+        help_text="User's chosen deployment option."
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
