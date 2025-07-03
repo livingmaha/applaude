@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../services/api';
-import { PlusCircle, User } from 'lucide-react'; 
+import { PlusCircle, User, Download, Copy } from 'lucide-react'; 
 import Card from '../components/ui/Card';
 
 // Define the type for a project object
@@ -13,6 +13,7 @@ interface Project {
   app_type: string;
   created_at: string;
   status_message?: string; // Add status_message to Project interface
+  deployment_platform?: string; // Add deployment_platform to Project interface
 }
 
 const Dashboard = () => {
@@ -44,6 +45,17 @@ const Dashboard = () => {
         logout();
         navigate('/login');
     };
+
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+    };
+
+    const installationInstructions = `
+1. Copy the link displayed above.
+2. Send the link to your mobile phone device.
+3. Click on the link (the app will start to download).
+4. When the download finishes, open the mobile app to install.
+    `;
 
     return (
         <div className="min-h-screen text-soft-white bg-quantum-black p-8">
@@ -84,8 +96,8 @@ const Dashboard = () => {
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map(project => (
-                    <Link to={`/projects/${project.id}`} key={project.id} className="block">
-                        <Card className="p-6 h-full flex flex-col justify-between animate-fade-in transform transition-transform duration-300 ease-in-out">
+                    <Card key={project.id} className="p-6 h-full flex flex-col justify-between animate-fade-in transform transition-transform duration-300 ease-in-out">
+                        <Link to={`/projects/${project.id}`} className="block">
                             <div>
                                 <h3 className="text-xl font-bold text-ion-blue mb-2">{project.name}</h3>
                                 <p className="text-sm text-gray-400 mb-4">Platform: {project.app_type}</p>
@@ -95,8 +107,19 @@ const Dashboard = () => {
                                     {project.status_message || project.status}
                                 </span>
                             </div>
-                        </Card>
-                    </Link>
+                        </Link>
+                        {project.deployment_platform === 'Applause' && project.status === 'COMPLETED' && (
+                            <div className="mt-4 pt-4 border-t border-gray-700">
+                                <h4 className="text-lg font-bold mb-2">Your App is Ready!</h4>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <a href={`https://cdn.applause.ai/apps/${project.id}/app.apk`} target="_blank" rel="noreferrer" className="text-ion-blue hover:underline truncate">https://cdn.applause.ai/apps/{project.id}/app.apk</a>
+                                    <button onClick={() => handleCopy(`https://cdn.applause.ai/apps/${project.id}/app.apk`)} className="p-1 hover:bg-gray-700 rounded"><Copy size={16} /></button>
+                                </div>
+                                <div className="text-sm text-gray-400 mb-2 whitespace-pre-wrap">{installationInstructions}</div>
+                                <button onClick={() => handleCopy(installationInstructions)} className="flex items-center gap-2 text-sm text-ion-blue hover:underline"><Copy size={14}/> Copy Instructions</button>
+                            </div>
+                        )}
+                    </Card>
                 ))}
             </div>
         )}
