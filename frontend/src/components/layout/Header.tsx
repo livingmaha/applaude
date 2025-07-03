@@ -1,4 +1,4 @@
-// File: frontend/src/components/layout/Header.tsx
+
 import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MobileNav from './MobileNav';
