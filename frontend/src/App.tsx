@@ -1,4 +1,3 @@
-// File: /frontend/src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -12,6 +11,7 @@ import ProtectedRoute from './components/core/ProtectedRoute';
 import AboutPage from './pages/AboutPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage'; // Import the new page
+import BuildAndPreviewPage from './pages/BuildAndPreviewPage';
 
 function App() {
   return (
@@ -30,6 +30,7 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} /> {/* Add profile route */}
             <Route path="/projects/create" element={<CreateProjectPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            <Route path="/projects/:id/build" element={<BuildAndPreviewPage />} />
           </Route>
         </Routes>
       </Router>
