@@ -26,17 +26,25 @@ class InitializePaymentView(APIView):
     def post(self, request, *args, **kwargs):
         project_id = request.data.get('project_id')
         plan_type = request.data.get('plan_type')
+        deployment_option = request.data.get('deployment_option')
 
-        if not all([project_id, plan_type]):
-            return Response({'error': 'Project ID and Plan Type are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not all([project_id, plan_type, deployment_option]):
+            return Response({'error': 'Project ID, Plan Type, and Deployment Option are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if plan_type not in PLAN_PRICES:
             return Response({'error': 'Invalid plan type.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if deployment_option not in Project.DeploymentOption.values:
+            return Response({'error': 'Invalid deployment option.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             project = Project.objects.get(id=project_id, owner=request.user)
         except Project.DoesNotExist:
             return Response({'error': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Update the project's deployment option before payment
+        project.deployment_option = deployment_option
+        project.save()
 
         if request.user.is_superuser:
             run_code_generation.delay(project.id)
