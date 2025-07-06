@@ -102,13 +102,19 @@ class PaystackWebhookView(APIView):
 
         event_data = json.loads(request.body)
         event_type = event_data['event']
+        data = event_data.get('data', {})
 
         if event_type == 'charge.success':
-            reference = event_data['data']['reference']
+            reference = data.get('reference')
             try:
                 payment = Payment.objects.get(paystack_reference=reference)
                 if payment.status == 'PENDING':
                     payment.status = Payment.PaymentStatus.SUCCESSFUL
+                    
+                    # If it's a subscription, save the codes
+                    if data.get('plan'):
+                         payment.plan_code = data['plan'].get('plan_code')
+                         payment.subscription_code = data.get('subscription', {}).get('subscription_code')
                     payment.save()
                     
                     user = payment.user
@@ -121,5 +127,20 @@ class PaystackWebhookView(APIView):
                 
             except Payment.DoesNotExist:
                 return Response(status=status.HTTP_404_NOT_FOUND)
+
+        elif event_type == 'subscription.create':
+            # This can be used to confirm subscription setup
+            pass
+        
+        elif event_type in ['invoice.payment_failed', 'subscription.disabled']:
+            subscription_code = data.get('subscription_code')
+            if subscription_code:
+                try:
+                    payment = Payment.objects.get(subscription_code=subscription_code)
+                    user = payment.user
+                    user.is_premium_subscribed = False
+                    user.save(update_fields=['is_premium_subscribed'])
+                except Payment.DoesNotExist:
+                    pass
 
         return Response(status=status.HTTP_200_OK)
