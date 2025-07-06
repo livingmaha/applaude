@@ -2,7 +2,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Card from '../components/ui/Card';
 
-// Import team member images
+// Corrected: Import images from their location inside the 'src' directory
 import mugambiJohnNdeke from '../assets/images/mugambi_john_ndeke.jpg.jpg';
 import tsionTamirat from '../assets/images/tsion_tamirat.jpg.jpg';
 
@@ -12,13 +12,13 @@ const AboutPage = () => {
             name: 'Mugambi (John) Ndeke',
             role: 'co-founder & AI Lead',
             bio: "As the visionary behind Uplas, John combines deep technical expertise with a powerful drive to solve real-world problems. He is a full-stack AI Software Engineer who builds cutting-edge AI agentic systems and possesses a rare blend of skills in Python/Django, MySQL, and modern frontend development. But John is more than a coder; his foundation as an award-winning Digital Strategist gives him a unique lens on building a brand that resonates and a product that sells. He doesn't just deliver technical excellence; he builds with a strategic business perspective, ensuring Uplas is not only innovative but also impactful.",
-            image: mugambiJohnNdeke // Use imported image
+            image: mugambiJohnNdeke
         },
         {
             name: 'Tsion Tamirat',
             role: 'Co-Founder & Software Engineer',
             bio: "Tsion is a motivated and versatile Software Engineer, driven by a passion for creating impactful, user-focused applications with clean, efficient code. With a strong foundation from Arba Minch University and practical experience at NGCS, she brings a robust skill set in both backend and frontend technologies. Her expertise spans C# (.NET Core), Python (Django), and modern frontend frameworks like React, ensuring our platform is not just powerful but also responsive and intuitive. A critical thinker and natural collaborator, Tsion is committed to continuous learning and plays a vital role in shaping the technical architecture and user experience of Applause.",
-            image: tsionTamirat // Use imported image
+            image: tsionTamirat
         }
     ]
 
