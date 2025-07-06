@@ -1,13 +1,12 @@
-// File: /frontend/src/components/core/ProtectedRoute.tsx
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import { AuthContext } from '../../contexts/AuthContext';
 
 const ProtectedRoute = () => {
   const authContext = useContext(AuthContext);
 
+  // If context is not available, it's a loading/error state. Redirect to login.
   if (!authContext) {
-    // This case should ideally not happen if the component is used correctly
     return <Navigate to="/login" />;
   }
 
