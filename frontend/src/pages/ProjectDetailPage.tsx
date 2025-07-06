@@ -9,7 +9,6 @@ import ChatWindow from '../components/core/ChatWindow';
 import paymentService from '../services/paymentService';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Switch } from '../components/ui/Switch'; // Assuming a new Switch component
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface ProjectDetails {
     id: number;
