@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import Card from '../components/ui/Card';
 import { User, Mail, ShieldCheck } from 'lucide-react';
