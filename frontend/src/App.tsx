@@ -10,29 +10,31 @@ import ProtectedRoute from './components/core/ProtectedRoute';
 import AboutPage from './pages/AboutPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
-import BuildAndPreviewPage from './pages/BuildAndPreviewPage';
+import PreviewPage from './pages/PreviewPage'; // Renamed
 import UpgradeSubscriptionPage from './pages/UpgradeSubscriptionPage';
+import NotFoundPage from './pages/NotFoundPage'; // Added
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public Routes */}
+
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/projects/create" element={<CreateProjectPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/projects/:id/build" element={<BuildAndPreviewPage />} />
+            <Route path="/projects/:id/preview" element={<PreviewPage />} /> {/* Changed route */}
             <Route path="/upgrade" element={<UpgradeSubscriptionPage />} />
           </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>
     </AuthProvider>
