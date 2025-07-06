@@ -1,6 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import apiClient from '../services/api';
 import Card from '../components/ui/Card';
 import { User, Mail, ShieldCheck } from 'lucide-react';
 
