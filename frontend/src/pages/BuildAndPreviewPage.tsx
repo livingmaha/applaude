@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import apiClient from '../services/api';
 import AppSimulator from '../components/core/AppSimulator';
@@ -11,6 +11,7 @@ interface Project {
     id: number;
     name: string;
     status: string;
+    status_message?: string;
     brand_palette?: {
         primary: string;
         secondary: string;
