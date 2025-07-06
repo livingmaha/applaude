@@ -7,14 +7,16 @@ interface Message {
 }
 
 interface ChatWindowProps {
-    projectId: number;
+    messages: Message[];
+    onSendMessage: (message: string | object) => void;
+    input: string;
+    setInput: (value: string) => void;
+    placeholder: string;
+    interactiveOptions?: { text: string; payload: any }[];
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [input, setInput] = useState('');
-    const [isConnected, setIsConnected] = useState(false);
-    const webSocket = useRef<WebSocket | null>(null);
+
+const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, input, setInput, placeholder, interactiveOptions }) => {
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -23,54 +25,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
 
     useEffect(scrollToBottom, [messages]);
 
-    const connect = useCallback(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("Authentication token not found.");
-            return;
-        }
-
-        const wsUrl = (import.meta.env.VITE_API_URL || 'ws://127.0.0.1:8000')
-            .replace(/^http/, 'ws') + `/ws/chat/${projectId}/?token=${token}`;
-
-        webSocket.current = new WebSocket(wsUrl);
-
-        webSocket.current.onopen = () => {
-            console.log("WebSocket Connected");
-            setIsConnected(true);
-            setMessages(prev => [...prev, { text: 'Connected to Applause Prime...', sender: 'system' }]);
-        };
-
-        webSocket.current.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            setMessages(prev => [...prev, { text: data.message, sender: data.sender }]);
-        };
-
-        webSocket.current.onclose = () => {
-            console.log("WebSocket Disconnected");
-            setIsConnected(false);
-            setMessages(prev => [...prev, { text: 'Connection lost. Attempting to reconnect...', sender: 'system' }]);
-            setTimeout(connect, 5000); // Reconnect after 5 seconds
-        };
-
-        webSocket.current.onerror = (error) => {
-            console.error("WebSocket Error:", error);
-        };
-    }, [projectId]);
-
-    useEffect(() => {
-        connect();
-        return () => {
-            webSocket.current?.close();
-        };
-    }, [connect]);
-
     const handleSend = () => {
-        if (input.trim() && webSocket.current?.readyState === WebSocket.OPEN) {
-            webSocket.current.send(JSON.stringify({ 'message': input }));
+        if (input.trim()) {
+            onSendMessage(input);
             setInput('');
         }
     };
+    
+    const handleOptionClick = (option: { text: string; payload: any }) => {
+        onSendMessage(option);
+    };
+
 
     return (
         <div className="flex flex-col h-[32rem] bg-black bg-opacity-20 backdrop-blur-xl rounded-2xl shadow-2xl border border-white border-opacity-10 overflow-hidden">
@@ -78,7 +43,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-xl shadow-md ${
-                            msg.sender === 'user' ? 'bg-fusion-pink text-white' : 
+                            msg.sender === 'user' ? 'bg-fusion-pink text-white' :
                             msg.sender === 'system' ? 'bg-gray-800 text-gray-400 italic' :
                             'bg-gray-700 bg-opacity-50 text-soft-white'
                         }`}>
@@ -89,6 +54,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
                 ))}
                 <div ref={messagesEndRef} />
             </div>
+            
+            {interactiveOptions && interactiveOptions.length > 0 && (
+                <div className="p-4 flex flex-wrap gap-2 justify-center border-t border-white border-opacity-10">
+                    {interactiveOptions.map((option, index) => (
+                        <button
+                            key={index}
+                            onClick={() => handleOptionClick(option)}
+                            className="px-4 py-2 bg-ion-blue text-black font-bold rounded-lg hover:bg-opacity-80 transition-all"
+                        >
+                            {option.text}
+                        </button>
+                    ))}
+                </div>
+            )}
+
 
             <div className="p-4 bg-black bg-opacity-30 border-t border-white border-opacity-10">
                 <div className="flex items-center">
@@ -104,14 +84,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder={isConnected ? "Chat with Applause Prime..." : "Connecting..."}
+                        placeholder={placeholder}
                         className="w-full bg-transparent text-soft-white placeholder-gray-500 focus:outline-none px-2"
-                        disabled={!isConnected}
                     />
                     <button
                         onClick={handleSend}
                         className="ml-2 p-2 bg-fusion-pink rounded-full text-white hover:bg-opacity-80 transition-all duration-300"
-                        disabled={!isConnected}
                     >
                         <Send size={20} />
                     </button>
