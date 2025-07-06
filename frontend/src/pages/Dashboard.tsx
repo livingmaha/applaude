@@ -1,8 +1,8 @@
-import React, { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../services/api';
-import { PlusCircle, User, Download, Copy } from 'lucide-react'; 
+import { PlusCircle, User, Copy } from 'lucide-react';
 import Card from '../components/ui/Card';
 
 // Define the type for a project object
@@ -12,8 +12,8 @@ interface Project {
   status: string;
   app_type: string;
   created_at: string;
-  status_message?: string; // Add status_message to Project interface
-  deployment_platform?: string; // Add deployment_platform to Project interface
+  status_message?: string;
+  deployment_platform?: string;
 }
 
 const Dashboard = () => {
