@@ -1,11 +1,10 @@
-import React from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Card from '../components/ui/Card';
 
 // Import team member images
-import mugambiJohnNdeke from '../assets/images/mugambi_john_ndeke.jpg.jpg';
-import tsionTamirat from '../assets/images/tsion_tamirat.jpg.jpg';
+import mugambiJohnNdeke from '../assets/images/mugambi_john_ndeke.jpg';
+import tsionTamirat from '../assets/images/tsion_tamirat.jpg';
 
 const AboutPage = () => {
     const foundingTeam = [
