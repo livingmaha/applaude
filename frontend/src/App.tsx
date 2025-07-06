@@ -12,7 +12,8 @@ import AboutPage from './pages/AboutPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import BuildAndPreviewPage from './pages/BuildAndPreviewPage';
-import UpgradeSubscriptionPage from './pages/UpgradeSubscriptionPage'; // Import the new page
+import UpgradeSubscriptionPage from './pages/UpgradeSubscriptionPage';
+import ApiPage from './pages/ApiPage'; // Import the new API page
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/api" element={<ApiPage />} /> {/* Add the new API route */}
+
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
@@ -32,7 +35,7 @@ function App() {
             <Route path="/projects/create" element={<CreateProjectPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/projects/:id/build" element={<BuildAndPreviewPage />} />
-            <Route path="/upgrade" element={<UpgradeSubscriptionPage />} /> {/* Add the new route */}
+            <Route path="/upgrade" element={<UpgradeSubscriptionPage />} />
           </Route>
         </Routes>
       </Router>
