@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { MessageSquare, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 // Placeholder for the Applause logo animation
 const ApplauseLogoLoader = () => (
