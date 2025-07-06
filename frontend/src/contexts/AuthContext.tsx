@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import apiClient from '../services/api';
 import paymentService from '../services/paymentService';
@@ -25,6 +26,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isSubscribed: boolean;
     login: (email: string, password: string) => Promise<void>;
+    signup: (username: string, email: string, password: string) => Promise<void>; // Added signup
     logout: () => void;
     isPaymentModalOpen: boolean;
     openPaymentConversation: (projectId: number) => void;
@@ -82,6 +84,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { token: responseToken } = response.data;
         localStorage.setItem('token', responseToken);
         setupAuth(responseToken);
+    };
+
+    const signup = async (username: string, email: string, password: string) => {
+        await apiClient.post('/users/create/', {
+            username,
+            email,
+            password,
+        });
+        await login(email, password);
     };
 
     const logout = () => {
@@ -159,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return (
         <AuthContext.Provider value={{
-            token, user, isAuthenticated: !!token, isSubscribed, login, logout,
+            token, user, isAuthenticated: !!token, isSubscribed, login, signup, logout,
             isPaymentModalOpen, openPaymentConversation, closePaymentConversation,
             paymentConversation, setPaymentConversation, sendPaymentMessage
         }}>
