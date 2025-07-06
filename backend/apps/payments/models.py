@@ -22,6 +22,11 @@ class Payment(models.Model):
     paystack_reference = models.CharField(max_length=100, unique=True, blank=True)
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     plan_type = models.CharField(max_length=20, choices=PlanType.choices, default=PlanType.ONETIME)
+    
+    # New fields for subscription management
+    subscription_code = models.CharField(max_length=100, blank=True, null=True, help_text="Paystack subscription code for recurring billing.")
+    plan_code = models.CharField(max_length=100, blank=True, null=True, help_text="Paystack plan code associated with this subscription.")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
