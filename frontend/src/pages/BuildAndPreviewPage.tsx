@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import apiClient from '../services/api';
 import AppSimulator from '../components/core/AppSimulator';
@@ -27,8 +27,13 @@ const BuildAndPreviewPage = () => {
     const [isDeploymentModalOpen, setDeploymentModalOpen] = useState(false);
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
+    // State for chat window - required by the component
+    const [chatMessages, setChatMessages] = useState<{text: string, sender: string}[]>([]);
+    const [chatInput, setChatInput] = useState('');
+
     useEffect(() => {
         const fetchProject = async () => {
+            if (!id) return;
             try {
                 const response = await apiClient.get(`/projects/${id}/`);
                 setProject(response.data);
@@ -56,7 +61,13 @@ const BuildAndPreviewPage = () => {
         closeDeploymentModal();
         openPaymentModal();
     };
-
+    
+    // Dummy function for chat window prop
+    const handleSendMessage = (message: string | object) => {
+        console.log("Sending message:", message);
+        const userMessage = typeof message === 'string' ? message : (message as any).text;
+        setChatMessages(prev => [...prev, {text: userMessage, sender: 'user'}]);
+    };
 
     if (loading) {
         return <div className="min-h-screen bg-quantum-black text-soft-white flex items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-ion-blue" /></div>;
@@ -74,14 +85,20 @@ const BuildAndPreviewPage = () => {
                 <div>
                     <h2 className="text-2xl font-bold mb-4">AI Agent Swarm Status</h2>
                     <div className="bg-gray-800 p-4 rounded-lg">
-                        <p>{project?.status}</p>
+                        <p>{project?.status_message || project?.status}</p>
                     </div>
 
                     {project?.status === 'COMPLETED' && (
                          <div className="mt-8">
                             <h2 className="text-2xl font-bold mb-4">Improve Your App</h2>
                             <p className="text-gray-400 mb-4">Use the chat below to provide text prompts for improvements.</p>
-                             <ChatWindow projectId={project.id} />
+                             <ChatWindow 
+                                messages={chatMessages}
+                                onSendMessage={handleSendMessage}
+                                input={chatInput}
+                                setInput={setChatInput}
+                                placeholder="Chat with Applause Prime..."
+                             />
                          </div>
                     )}
                 </div>
