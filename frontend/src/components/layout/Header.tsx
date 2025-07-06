@@ -1,12 +1,10 @@
-
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import MobileNav from './MobileNav';
 import { AuthContext } from '../../contexts/AuthContext';
 import { MessageSquare } from 'lucide-react';
 import ChatWindow from '../core/ChatWindow';
-import paymentService from '../../services/paymentService';
-import logoIcon from '../../assets/images/logo_icon.png'; // Import the logo image
+import logoIcon from '../../assets/images/logo_icon.png'; // Corrected Path
 
 const Header = () => {
     const authContext = useContext(AuthContext);
