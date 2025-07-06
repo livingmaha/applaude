@@ -1,4 +1,3 @@
-
 # File: /backend/applause_api/settings.py
 from pathlib import Path
 import os
@@ -42,6 +41,7 @@ INSTALLED_APPS = [
     'apps.payments',
     'apps.surveys',
     'apps.chat',
+    'apps.api', # New API app
     'agents',
 ]
 
@@ -172,5 +172,3 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
-
