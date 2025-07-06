@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'apps.payments',
     'apps.surveys',
     'apps.chat',
-    'apps.api', # New API app
+    'apps.api', # ADDED
     'agents',
 ]
 
