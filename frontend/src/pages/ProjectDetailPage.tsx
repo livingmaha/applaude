@@ -5,7 +5,7 @@ import Card from '../components/ui/Card';
 import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Download, Upload, SlidersHorizontal } from 'lucide-react';
 import AppSimulator from '../components/core/AppSimulator';
 import { AuthContext } from '../contexts/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Switch } from '../components/ui/Switch';
 
 interface ProjectDetails {
@@ -126,7 +126,7 @@ const ProjectDetailPage = () => {
                                     <ResponsiveContainer width="100%" height={300}>
                                         <PieChart>
                                             <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
-                                                {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                                {chartData.map((_entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                             </Pie>
                                             <Tooltip />
                                         </PieChart>
