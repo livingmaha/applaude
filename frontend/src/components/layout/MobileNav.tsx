@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 
@@ -13,7 +13,7 @@ const MobileNav = () => {
                 {isOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
             {isOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-quantum-black bg-opacity-90 backdrop-blur-lg z-40 flex flex-col items-center justify-center"
                     onClick={toggleMenu}
                 >
