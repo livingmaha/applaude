@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Send, Mic, Paperclip } from 'lucide-react'; // Import new icons
 
 interface Message {
