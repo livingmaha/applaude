@@ -6,6 +6,7 @@ import json
 import uuid
 from decimal import Decimal
 from django.conf import settings
+from django.db import transaction
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from apps.projects.models import Project
 from apps.users.models import CustomUser
 from .models import Payment
 from agents.tasks import run_code_generation
+from apps.api.models import ApiClient # Import ApiClient
 
 PLAN_PRICES = {
     'ONETIME': Decimal('50.00'),
@@ -95,10 +97,10 @@ class PaystackWebhookView(APIView):
         paystack_key = os.getenv('PAYSTACK_SECRET_KEY')
         signature = request.headers.get('x-paystack-signature')
         if not signature or not hmac.compare_digest(
-            signature, 
+            signature,
             hmac.new(paystack_key.encode('utf-8'), request.body, hashlib.sha512).hexdigest()
         ):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
 
         event_data = json.loads(request.body)
         event_type = event_data['event']
@@ -106,41 +108,74 @@ class PaystackWebhookView(APIView):
 
         if event_type == 'charge.success':
             reference = data.get('reference')
-            try:
-                payment = Payment.objects.get(paystack_reference=reference)
-                if payment.status == 'PENDING':
-                    payment.status = Payment.PaymentStatus.SUCCESSFUL
-                    
-                    # If it's a subscription, save the codes
-                    if data.get('plan'):
-                         payment.plan_code = data['plan'].get('plan_code')
-                         payment.subscription_code = data.get('subscription', {}).get('subscription_code')
-                    payment.save()
-                    
-                    user = payment.user
-                    if payment.plan_type in ['MONTHLY', 'YEARLY']:
-                        user.is_premium_subscribed = True
-                        user.save(update_fields=['is_premium_subscribed'])
+            metadata = data.get('metadata', {})
+            payment_type = metadata.get('payment_type')
 
-                    if not payment.project.status.startswith('COMPLETE'):
-                         run_code_generation.delay(payment.project.id)
+            with transaction.atomic():
+                # Handle API Setup Fee Payment
+                if payment_type == 'api_setup':
+                    api_client_id = metadata.get('api_client_id')
+                    try:
+                        api_client = ApiClient.objects.select_for_update().get(id=api_client_id)
+                        if not api_client.is_active:
+                            api_client.is_active = True
+                            api_client.save()
+                            # Here you would typically send an email to the user with their API key
+                            print(f"API Client {api_client.business_name} activated successfully.")
+                    except ApiClient.DoesNotExist:
+                        print(f"Webhook Error: ApiClient with ID {api_client_id} not found.")
+                        return Response(status=status.HTTP_404_NOT_FOUND)
                 
-            except Payment.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+                # Handle standard project payment
+                else:
+                    try:
+                        payment = Payment.objects.select_for_update().get(paystack_reference=reference)
+                        if payment.status == 'PENDING':
+                            payment.status = Payment.PaymentStatus.SUCCESSFUL
+                            
+                            # If it's a subscription, save the codes
+                            if data.get('plan'):
+                                payment.plan_code = data['plan'].get('plan_code')
+                                payment.subscription_code = data.get('subscription', {}).get('subscription_code')
+                            payment.save()
+                            
+                            user = payment.user
+                            if payment.plan_type in ['MONTHLY', 'YEARLY']:
+                                user.is_premium_subscribed = True
+                                user.save(update_fields=['is_premium_subscribed'])
+
+                            if not payment.project.status.startswith('COMPLETE'):
+                                run_code_generation.delay(payment.project.id)
+                    except Payment.DoesNotExist:
+                        print(f"Webhook Error: Payment with reference {reference} not found.")
+                        return Response(status=status.HTTP_404_NOT_FOUND)
 
         elif event_type == 'subscription.create':
-            # This can be used to confirm subscription setup
+            # This is a good place to handle the creation of a subscription for an API client
+            # For simplicity in this build, we are using a one-time setup fee.
+            # A usage-based billing plan would be implemented here.
             pass
         
         elif event_type in ['invoice.payment_failed', 'subscription.disabled']:
+            # Deactivate user's premium or API access if subscription fails
             subscription_code = data.get('subscription_code')
             if subscription_code:
                 try:
+                    # Deactivate premium user
                     payment = Payment.objects.get(subscription_code=subscription_code)
                     user = payment.user
                     user.is_premium_subscribed = False
                     user.save(update_fields=['is_premium_subscribed'])
                 except Payment.DoesNotExist:
                     pass
+                
+                try:
+                    # Deactivate API client
+                    api_client = ApiClient.objects.get(user__payment__subscription_code=subscription_code)
+                    api_client.is_active = False
+                    api_client.save()
+                except ApiClient.DoesNotExist:
+                    pass
+
 
         return Response(status=status.HTTP_200_OK)
