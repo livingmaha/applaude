@@ -3,7 +3,7 @@ import { Send } from 'lucide-react';
 
 const Onboarding = () => {
   const [messages, setMessages] = useState([
-    { text: "Hello! I'm Applause, your AI co-founder. To get started, what is the URL of your existing website?", sender: 'ai' },
+    { text: "Hello! I'm Applause, your AI customer care. To get started, what is the URL of your existing website?", sender: 'ai' },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
