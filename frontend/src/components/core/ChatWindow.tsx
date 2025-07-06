@@ -1,6 +1,5 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Mic, Paperclip } from 'lucide-react'; // Import new icons
 
 interface Message {
     text: string;
@@ -31,7 +30,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
             return;
         }
 
-        const wsUrl = (process.env.VITE_API_URL || 'ws://127.0.0.1:8000')
+        const wsUrl = (import.meta.env.VITE_API_URL || 'ws://127.0.0.1:8000')
             .replace(/^http/, 'ws') + `/ws/chat/${projectId}/?token=${token}`;
 
         webSocket.current = new WebSocket(wsUrl);
@@ -93,18 +92,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ projectId }) => {
 
             <div className="p-4 bg-black bg-opacity-30 border-t border-white border-opacity-10">
                 <div className="flex items-center">
+                    {/* Placeholder Icons for future features */}
+                    <button className="p-2 text-gray-400 hover:text-ion-blue transition-colors" title="Attach File">
+                        <Paperclip size={20} />
+                    </button>
+                    <button className="p-2 text-gray-400 hover:text-ion-blue transition-colors" title="Use Voice Input">
+                        <Mic size={20} />
+                    </button>
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                         placeholder={isConnected ? "Chat with Applause Prime..." : "Connecting..."}
-                        className="w-full bg-transparent text-soft-white placeholder-gray-500 focus:outline-none"
+                        className="w-full bg-transparent text-soft-white placeholder-gray-500 focus:outline-none px-2"
                         disabled={!isConnected}
                     />
                     <button
                         onClick={handleSend}
-                        className="ml-4 p-2 bg-fusion-pink rounded-full text-white hover:bg-opacity-80 transition-all duration-300"
+                        className="ml-2 p-2 bg-fusion-pink rounded-full text-white hover:bg-opacity-80 transition-all duration-300"
                         disabled={!isConnected}
                     >
                         <Send size={20} />
