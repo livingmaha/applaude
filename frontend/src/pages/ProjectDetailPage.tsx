@@ -2,13 +2,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiClient from '../services/api';
 import Card from '../components/ui/Card';
-import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Shield, Download, Upload } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Download, Upload, SlidersHorizontal } from 'lucide-react';
 import AppSimulator from '../components/core/AppSimulator';
 import { AuthContext } from '../contexts/AuthContext';
-import ChatWindow from '../components/core/ChatWindow';
-import paymentService from '../services/paymentService';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Switch } from '../components/ui/Switch'; // Assuming a new Switch component
+import { Switch } from '../components/ui/Switch';
 
 interface ProjectDetails {
     id: number;
