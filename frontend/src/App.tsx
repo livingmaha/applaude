@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -13,7 +12,6 @@ import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import BuildAndPreviewPage from './pages/BuildAndPreviewPage';
 import UpgradeSubscriptionPage from './pages/UpgradeSubscriptionPage';
-import ApiPage from './pages/ApiPage'; // Import the new API page
 
 function App() {
   return (
@@ -25,8 +23,6 @@ function App() {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/api" element={<ApiPage />} /> {/* Add the new API route */}
-
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
