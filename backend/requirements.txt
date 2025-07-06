@@ -10,3 +10,5 @@ flake8
 channels
 channels-redis
 gunicorn
+django-storages
+boto3
