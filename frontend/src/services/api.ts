@@ -1,7 +1,8 @@
+// frontend/src/services/api.ts
 import axios from 'axios';
 
 // The base URL for our Django backend API
-// Use environment variable for production, with a local fallback.
+// Use Vite's import.meta.env for environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/';
 
 // Create an instance of axios with default settings
