@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -10,7 +9,7 @@ const Footer = () => {
                  <Link to="/api" className="hover:text-ion-blue transition-colors">Partner API</Link>
                  <a href="#" className="hover:text-ion-blue transition-colors">Terms of Service</a>
             </div>
-            <p>&copy; @2025 Applause Inc. All rights reserved.</p>
+            <p>&copy; {currentYear} Applause Inc. All rights reserved.</p>
         </footer>
     );
 };
