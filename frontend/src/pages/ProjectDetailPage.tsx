@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiClient from '../services/api';
 import Card from '../components/ui/Card';
