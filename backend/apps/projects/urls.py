@@ -1,4 +1,3 @@
-from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import ProjectViewSet
@@ -9,8 +8,5 @@ router.register(r'', ProjectViewSet, basename='project')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/users/', include('apps.users.urls')),
-    path('api/projects/', include('apps.projects.urls')), # <-- ADD THIS LINE
-    path('api/payments/', include('apps.payments.urls')),
+    path('', include(router.urls)),
 ]
