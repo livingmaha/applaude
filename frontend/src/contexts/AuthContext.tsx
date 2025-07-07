@@ -1,4 +1,4 @@
-
+// frontend/src/contexts/AuthContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import apiClient from '../services/api';
 import paymentService from '../services/paymentService';
