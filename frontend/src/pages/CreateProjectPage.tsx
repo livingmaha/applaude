@@ -1,3 +1,5 @@
+
+// frontend/src/pages/CreateProjectPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
@@ -24,7 +26,7 @@ const CreateProjectPage = () => {
                 app_type: appType,
             });
             // On success, navigate to the new build and preview page
-            navigate(`/projects/${response.data.id}/build`);
+            navigate(`/projects/${response.data.id}/preview`);
         } catch (err: any) {
             setError('Failed to create project. Please check the details and try again.');
             console.error(err);
