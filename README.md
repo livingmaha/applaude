@@ -14,14 +14,15 @@ Applause is a revolutionary platform that empowers non-technical creators to bui
 * React Router
 * Axios
 * Recharts
+* i18next (for internationalization)
 
 **Backend:**
-* Django (Monolithic, Django REST Framework)
+* Django & Django REST Framework
 * Celery (for asynchronous AI tasks)
 * Django Channels (for WebSockets)
 
 **Database & Broker:**
-* MySQL (or PostgreSQL in production)
+* PostgreSQL (Production) / SQLite (Development)
 * Redis
 
 **AI & Payments:**
@@ -30,87 +31,144 @@ Applause is a revolutionary platform that empowers non-technical creators to bui
 
 ---
 
-### Final Execution Protocol: Local Deployment
+### Local Development Setup
 
-Follow these steps precisely to set up and run the entire Applause platform locally.
+Follow these steps to set up and run the Applause platform on your local machine.
 
-(Local deployment instructions remain the same)
+#### **1. Prerequisites**
+* Python 3.10+
+* Node.js 18+ & npm
+* MySQL (or use the default SQLite)
+* Redis
 
----
+#### **2. Backend Setup**
 
-### **Part 4: Production Deployment Protocol**
+```bash
+# Navigate to the backend directory
+cd backend
 
-This section outlines the steps to deploy the Applause platform to a production environment (e.g., a cloud server like AWS EC2, DigitalOcean, etc.).
+# Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-#### **A. Frontend Deployment (Vercel)**
+# Install Python dependencies
+pip install -r requirements.txt
 
-The frontend is a static React application and is best hosted on a platform optimized for static sites.
+# Create a .env file from the .env.example template
+# cp .env.example .env
 
-1.  **Push to GitHub:** Ensure your final code is pushed to your GitHub repository.
-2.  **Create a Vercel Account:** Sign up or log in to [Vercel](https://vercel.com).
-3.  **Import Project:** Import your GitHub repository into Vercel.
-4.  **Configure Project:**
-    * **Framework Preset:** Vercel should automatically detect it as a Vite project.
-    * **Root Directory:** Set the root directory to `frontend`.
-    * **Environment Variables:** Add an environment variable `VITE_API_URL` and set it to the public URL of your backend API (e.g., `https://api.yourapplause.com/api`).
-5.  **Deploy:** Vercel will automatically build and deploy the frontend. It will also redeploy on every push to the `main` branch.
+# Add your secret keys and database credentials to the .env file
+# (e.g., DJANGO_SECRET_KEY, GEMINI_API_KEY, PAYSTACK_SECRET_KEY)
 
-#### **B. Backend Deployment (Ubuntu Server)**
+# Run database migrations
+python manage.py makemigrations
+python manage.py migrate
 
-This guide assumes you have an Ubuntu server set up.
+# Create a superuser for admin access
+python manage.py createsuperuser
 
-1.  **Install Dependencies:**
-    ```bash
-    sudo apt-get update
-    sudo apt-get install python3-venv python3-dev libmysqlclient-dev nginx supervisor redis-server
-    ```
+# Start the Django development server
+python manage.py runserver
+3. Frontend Setup
+Bash
 
-2.  **Clone Repository:**
-    ```bash
-    git clone [https://github.com/your-username/applause.git](https://github.com/your-username/applause.git)
-    cd applause/backend
-    ```
+# Open a new terminal and navigate to the frontend directory
+cd frontend
 
-3.  **Setup Environment:**
-    * Create and activate the virtual environment as in the local setup.
-    * Install dependencies: `pip install -r requirements.txt`.
-    * Create and populate the `.env` file with your production keys and database credentials. Set `DEBUG=False`.
+# Install Node.js dependencies
+npm install
 
-4.  **Setup Gunicorn:** Gunicorn will serve as the production WSGI server for Django.
-    * A sample configuration is provided in `gunicorn.conf.py`.
+# Create a .env.local file
+# Add the backend API URL:
+# VITE_API_URL=[http://127.0.0.1:8000/api](http://127.0.0.1:8000/api)
 
-5.  **Setup Nginx (Reverse Proxy):** Nginx will face the public internet and proxy requests to Gunicorn.
-    * Create a new Nginx configuration file:
-        ```bash
-        sudo nano /etc/nginx/sites-available/applause
-        ```
-    * Paste the contents of the provided `nginx.conf` into this file, making sure to replace `your_domain.com` and other placeholders.
-    * Enable the site and restart Nginx:
-        ```bash
-        sudo ln -s /etc/nginx/sites-available/applause /etc/nginx/sites-enabled
-        sudo nginx -t
-        sudo systemctl restart nginx
-        ```
+# Start the React development server
+npm run dev
+4. Start Asynchronous Workers
+You need to run Celery workers to handle the AI agent tasks.
 
-6.  **Setup Supervisor (Process Management):** Supervisor will ensure the Gunicorn and Celery processes are always running.
-    * Create a new Supervisor configuration file:
-        ```bash
-        sudo nano /etc/supervisor/conf.d/applause.conf
-        ```
-    * Paste the contents of the provided `supervisor.conf` file, updating paths as necessary.
-    * Start the processes:
-        ```bash
-        sudo supervisorctl reread
-        sudo supervisorctl update
-        sudo supervisorctl start applause-gunicorn
-        sudo supervisorctl start applause-celery
-        ```
+Bash
 
-7.  **Run Migrations & Collect Static:**
-    ```bash
-    python manage.py makemigrations
-    python manage.py migrate
-    python manage.py collectstatic
-    ```
+# Open a new terminal, navigate to the backend directory, and activate the virtual environment
+cd backend
+source venv/bin/activate
 
-**Your Applause platform is now live in production.**
+# Start the Celery worker
+celery -A applause_api worker -l info
+Production Deployment Protocol
+This section outlines the steps to deploy the Applause platform to a production environment.
+
+A. Frontend Deployment (Vercel)
+The frontend is a static React application and is best hosted on a platform optimized for static sites like Vercel.
+
+Push to GitHub: Ensure your final code is pushed to your GitHub repository.
+
+Create a Vercel Account: Sign up or log in to Vercel.
+
+Import Project: From your Vercel dashboard, import your GitHub repository.
+
+Configure Project:
+
+Framework Preset: Vercel should automatically detect it as a Vite project.
+
+Root Directory: Set the root directory to frontend.
+
+Environment Variables: Add an environment variable VITE_API_URL and set it to the public URL of your backend API (e.g., https://api.yourapplause.com/api).
+
+Deploy: Vercel will automatically build and deploy the frontend. It will also redeploy on every push to the main branch.
+
+B. Backend Deployment (AWS Example)
+This guide assumes you have an AWS account and the AWS CLI configured.
+
+Create an RDS PostgreSQL Instance:
+
+In the AWS console, create a new PostgreSQL RDS instance.
+
+Configure the security group to allow inbound traffic from your EC2 instance on port 5432.
+
+Note the database name, username, password, host, and port.
+
+Create an EC2 Instance:
+
+Launch a new EC2 instance (e.g., with Ubuntu).
+
+Configure its security group to allow inbound traffic on ports 22 (SSH), 80 (HTTP), and 443 (HTTPS).
+
+SSH into your instance.
+
+Install Dependencies on EC2:
+
+Bash
+
+sudo apt-get update
+sudo apt-get install python3-venv python3-dev nginx supervisor redis-server postgresql-client
+Clone Repository & Setup Environment on EC2:
+
+Bash
+
+git clone [https://github.com/your-username/applause.git](https://github.com/your-username/applause.git)
+cd applause/backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+Create a .env file and populate it with your production keys, RDS database credentials, ALLOWED_HOSTS (your domain name), and set ENVIRONMENT=production.
+
+Setup Gunicorn, Nginx, and Supervisor:
+
+Use the provided gunicorn.conf.py, nginx.conf (sample), and supervisor.conf (sample) files as templates.
+
+Configure Nginx as a reverse proxy to forward requests to Gunicorn.
+
+Configure Supervisor to manage the Gunicorn and Celery processes, ensuring they run continuously.
+
+Run Final Backend Commands:
+
+Bash
+
+# Apply database migrations
+python manage.py migrate
+
+# Collect static files for Nginx to serve
+python manage.py collectstatic --noinput
+Your Applause platform is now live in production.
+
