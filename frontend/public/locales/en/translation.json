@@ -1,1 +1,19 @@
-
+{
+  "tagline": "Did you know mobile apps build brand awareness, increase customer loyalty, & unlock revenue you never thought possible?",
+  "sub_tagline": "Build your Business mobile app today! No coding, no stress, you just need your Website Url.",
+  "start_building": "Start Building for Free",
+  "about": "About",
+  "login": "Login",
+  "signup": "Sign Up",
+  "dashboard": "Dashboard",
+  "logout": "Logout",
+  "welcome_back": "Welcome back, {{email}}",
+  "my_projects": "My Projects",
+  "new_project": "New Project",
+  "no_projects": "You haven't created any projects yet. Click 'New Project' to begin.",
+  "project_name": "Project Name",
+  "website_url": "Website URL",
+  "target_platform": "Target Platform",
+  "start_analysis": "Start AI Analysis",
+  "faq": "FAQ"
+}
