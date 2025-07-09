@@ -1,6 +1,5 @@
 django
 djangorestframework
-mysqlclient
 django-cors-headers
 google-generativeai
 python-dotenv
@@ -12,3 +11,4 @@ channels-redis
 gunicorn
 django-storages
 boto3
+psycopg2-binary
