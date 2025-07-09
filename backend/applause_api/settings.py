@@ -1,4 +1,3 @@
-# File: /backend/applause_api/settings.py
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -17,10 +16,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'a-default-secret-key-for-developmen
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 DEBUG = ENVIRONMENT == 'development'
 
-if ENVIRONMENT == 'production':
-    ALLOWED_HOSTS = [os.getenv('AWS_DEPLOYMENT_URL')]
-else:
-    ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -90,7 +86,7 @@ WSGI_APPLICATION = 'applause_api.wsgi.application'
 if ENVIRONMENT == 'production':
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
+            'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('RDS_DB_NAME'),
             'USER': os.getenv('RDS_USERNAME'),
             'PASSWORD': os.getenv('RDS_PASSWORD'),
@@ -101,12 +97,8 @@ if ENVIRONMENT == 'production':
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.getenv('DB_NAME', 'applause_db'),
-            'USER': os.getenv('DB_USER', 'root'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '3306'),
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
@@ -179,17 +171,14 @@ REST_FRAMEWORK = {
 }
 
 # CORS Settings - Allow requests from our frontend
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173", # Default Vite dev server port
-    f"https://{os.getenv('VERCEL_URL')}"
-]
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 # At the BOTTOM of the file, add the Celery configuration:
 
 # CELERY SETTINGS
 # This points Celery to our Redis server, which acts as the message broker.
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -200,7 +189,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(os.getenv('REDIS_HOST', '127.0.0.1'), 6379)],
         },
     },
 }
