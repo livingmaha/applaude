@@ -1,0 +1,19 @@
+{
+  "tagline": "¿Sabías que las aplicaciones móviles aumentan el conocimiento de la marca, incrementan la lealtad del cliente y desbloquean ingresos que nunca creíste posibles?",
+  "sub_tagline": "Crea la aplicación móvil de tu negocio hoy mismo. Sin código, sin estrés, solo necesitas la URL de tu sitio web.",
+  "start_building": "Comienza a construir gratis",
+  "about": "Acerca de",
+  "login": "Iniciar sesión",
+  "signup": "Registrarse",
+  "dashboard": "Panel",
+  "logout": "Cerrar sesión",
+  "welcome_back": "Bienvenido de nuevo, {{email}}",
+  "my_projects": "Mis proyectos",
+  "new_project": "Nuevo proyecto",
+  "no_projects": "Aún no has creado ningún proyecto. Haz clic en 'Nuevo proyecto' para comenzar.",
+  "project_name": "Nombre del proyecto",
+  "website_url": "URL del sitio web",
+  "target_platform": "Plataforma de destino",
+  "start_analysis": "Iniciar análisis de IA",
+  "faq": "Preguntas frecuentes"
+}
