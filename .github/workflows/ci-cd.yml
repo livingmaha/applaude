@@ -64,3 +64,7 @@ jobs:
     - name: Run linter (Flake8)
       run: flake8 .
       working-directory: ./backend
+
+    - name: Run tests
+      run: python manage.py test
+      working-directory: ./backend
