@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import PreviewPage from './pages/PreviewPage'; // Renamed
 import UpgradeSubscriptionPage from './pages/UpgradeSubscriptionPage';
 import NotFoundPage from './pages/NotFoundPage'; // Added
+import FAQPage from './pages/FAQPage'; // Added
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/faq" element={<FAQPage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
