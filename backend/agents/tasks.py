@@ -5,8 +5,11 @@ from apps.surveys.models import SurveyResponse, AppRating
 from .market_analyst_agent import MarketAnalystAgent
 from .design_agent import DesignAgent
 from .code_generation_agent import CodeGenAgent
+from .qa_agent import QAAgent
+from .deployment_agent import DeploymentAgent
 from django.db.models import Count, Avg
 import json
+
 
 @shared_task(bind=True)
 def run_market_analysis(self, project_id: int):
@@ -114,3 +117,25 @@ def run_ai_orchestration():
                     project.status = Project.ProjectStatus.UPDATE_PENDING
                     project.save()
                     break
+
+@shared_task(bind=True)
+def run_qa_check(self, project_id: int):
+    """Celery task to execute the QA Agent."""
+    try:
+        agent = QAAgent()
+        agent.execute(project_id=project_id)
+    except Exception as e:
+        Project.objects.filter(id=project_id).update(status=Project.ProjectStatus.FAILED)
+        print(f"Error during QA check for project {project_id}: {e}")
+        raise
+
+@shared_task(bind=True)
+def run_deployment(self, project_id: int):
+    """Celery task to execute the Deployment Agent."""
+    try:
+        agent = DeploymentAgent()
+        agent.execute(project_id=project_id)
+    except Exception as e:
+        Project.objects.filter(id=project_id).update(status=Project.ProjectStatus.FAILED)
+        print(f"Error during deployment for project {project_id}: {e}")
+        raise
