@@ -62,7 +62,7 @@ class InitializeAPIPaymentView(generics.CreateAPIView):
                 "reference": paystack_reference,
                 "callback_url": f"{data['website_link']}/api-payment-success",
                 "metadata": {
-                    "api_client_id": api_client.id,
+                    "api_client_id": str(api_client.id),
                     "payment_type": "api_setup"
                 }
             }
