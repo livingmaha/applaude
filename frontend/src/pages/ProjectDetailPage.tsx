@@ -86,6 +86,25 @@ const ProjectDetailPage = () => {
         return null;
     };
 
+    const handleDownloadCode = async () => {
+        if (!project) return;
+        try {
+            const response = await apiClient.get(`/projects/${project.id}/download-code/`, {
+                responseType: 'blob', // Important for file downloads
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${project.name}_codebase.zip`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+        } catch (err) {
+            setError('Failed to download codebase.');
+            console.error(err);
+        }
+    };
+
     if (loading) return <div className="text-center p-10 text-soft-white">Loading Project...</div>;
     if (error) return <div className="text-center p-10 text-solar-orange">{error}</div>;
     if (!project) return <div className="text-center p-10 text-soft-white">Project not found.</div>;
@@ -198,10 +217,10 @@ const ProjectDetailPage = () => {
                                 <Upload size={20} /> Deploy to App Store
                             </button>
                             <button
-                                onClick={() => alert('Code download initiated!')}
+                                onClick={handleDownloadCode} // Changed from alert
                                 disabled={!isGenerationComplete}
                                 className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
-                            >
+                                >
                                 <Download size={20} /> Download Code
                             </button>
                         </div>
