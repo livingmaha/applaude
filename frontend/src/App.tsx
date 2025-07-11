@@ -10,10 +10,11 @@ import ProtectedRoute from './components/core/ProtectedRoute';
 import AboutPage from './pages/AboutPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
-import PreviewPage from './pages/PreviewPage'; // Renamed
+import PreviewPage from './pages/PreviewPage'; 
 import UpgradeSubscriptionPage from './pages/UpgradeSubscriptionPage';
-import NotFoundPage from './pages/NotFoundPage'; // Added
-import FAQPage from './pages/FAQPage'; // Added
+import NotFoundPage from './pages/NotFoundPage';
+import FAQPage from './pages/FAQPage';
+import ApiPage from './pages/ApiPage'; // Added
 
 function App() {
   return (
@@ -26,13 +27,14 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/api" element={<ApiPage />} /> 
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/projects/create" element={<CreateProjectPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/projects/:id/preview" element={<PreviewPage />} /> {/* Changed route */}
+            <Route path="/projects/:id/preview" element={<PreviewPage />} />
             <Route path="/upgrade" element={<UpgradeSubscriptionPage />} />
           </Route>
 
