@@ -24,7 +24,8 @@ const SignUpPage = () => {
         setError('');
         try {
             await signup(username, email, password);
-            navigate('/dashboard');
+            // MODIFICATION: Changed navigation from '/dashboard' to '/projects/create'
+            navigate('/projects/create');
         } catch (err: any) {
             if (err.response) {
                 setError(JSON.stringify(err.response.data));
