@@ -6,6 +6,8 @@ from .views import (
     ProjectAnalyticsView
 )
 
+app_name = 'surveys'
+
 urlpatterns = [
     path('submit/survey/', SubmitSurveyResponseView.as_view(), name='submit-survey'),
     path('submit/rating/', SubmitAppRatingView.as_view(), name='submit-rating'),
