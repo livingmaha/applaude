@@ -1,16 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import apiClient from '../services/api'; 
 
 const ApiPage = () => {
+    const [businessName, setBusinessName] = useState('');
+    const [websiteLink, setWebsiteLink] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleApiKeyRequest = (e: React.FormEvent) => {
+    const handleApiKeyRequest = async (e: React.FormEvent) => {
         e.preventDefault();
-        // This would trigger the backend to create an ApiClient and initiate payment
-        alert("This form is a placeholder. In a real application, this would initiate the payment flow.");
+        setError('');
+        setLoading(true);
+
+        try {
+            // The endpoint is /api/v1/initialize-payment/ as per the backend routing
+            const response = await apiClient.post('/v1/initialize-payment/', {
+                business_name: businessName,
+                website_link: websiteLink,
+                email: email,
+                password: password,
+            });
+
+            // Redirect to Paystack for payment completion
+            window.location.href = response.data.authorization_url;
+
+        } catch (err: any) {
+            if (err.response) {
+                setError(JSON.stringify(err.response.data));
+            } else {
+                setError('An unexpected error occurred. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -48,7 +77,7 @@ const ApiPage = () => {
                     <h2 className="text-4xl font-bold text-center mb-8">Endpoint Documentation</h2>
                     <Card className="p-8 font-mono text-sm">
                         <h3 className="text-xl font-bold text-solar-orange mb-2">Create Project</h3>
-                        <p className="mb-4"><span className="font-bold text-ion-blue">POST</span> /api/v1/projects/create</p>
+                        <p className="mb-4"><span className="font-bold text-ion-blue">POST</span> /api/v1/projects/create/</p>
 
                         <h4 className="font-bold mb-2">Authentication</h4>
                         <p className="mb-4">Include your API Key in the request header.</p>
@@ -78,11 +107,15 @@ const ApiPage = () => {
                     <h2 className="text-4xl font-bold text-center mb-8">Get Your API Key</h2>
                      <Card className="max-w-xl mx-auto p-8">
                          <form onSubmit={handleApiKeyRequest} className="space-y-6">
-                            <p className="text-center text-lg">The API is usage-based at a rate of <span className="font-bold text-solar-orange">$10 per app created</span>, with an initial setup fee.</p>
-                             <Input type="text" placeholder="Business Name" required />
-                             <Input type="url" placeholder="https://your-business.com" required />
-                             <Input type="email" placeholder="Contact Email" required />
-                             <Button type="submit" variant="primary" className="w-full">Proceed to Payment</Button>
+                            <p className="text-center text-lg">The API has a one-time setup fee of $99.</p>
+                             <Input type="text" placeholder="Business Name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required />
+                             <Input type="url" placeholder="https://your-business.com" value={websiteLink} onChange={(e) => setWebsiteLink(e.target.value)} required />
+                             <Input type="email" placeholder="Contact Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                             <Input type="password" placeholder="Create Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                             {error && <p className="text-solar-orange text-sm text-center">{error}</p>}
+                             <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+                                 {loading ? 'Processing...' : 'Proceed to Payment'}
+                             </Button>
                          </form>
                      </Card>
                 </section>
