@@ -8,7 +8,7 @@ from agents.tasks import process_feedback_data
 class SubmitSurveyResponseView(generics.CreateAPIView):
     queryset = SurveyResponse.objects.all()
     serializer_class = SurveyResponseSerializer
-    permission_classes = [permissions.AllowAny] # Assuming mobile app submissions might be anonymous
+    permission_classes = [permissions.AllowAny]
 
     def perform_create(self, serializer):
         project_id = self.request.data.get('project')
