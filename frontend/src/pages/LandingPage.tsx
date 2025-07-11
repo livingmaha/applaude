@@ -12,10 +12,10 @@ const LandingPage = () => {
             <Header />
             <main className="flex flex-col items-center justify-center text-center p-8 flex-grow">
                  <img src={logoIcon} alt="Applause Logo" className="w-32 h-32 mb-8 animate-pulse" />
-                <h1 className="text-5xl md:text-7xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-ion-blue to-fusion-pink">Did you know mobile apps build brand awareness, increase customer loyalty, & unlock revenue you never thought possible?</h1>
-                <p className="text-xl text-gray-400 mb-12 max-w-2xl">Build your Business mobile app today! No coding, no stress, you just need your Website Url.</p>
+                <h1 className="text-5xl md:text-7xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-ion-blue to-fusion-pink">{t('tagline')}</h1>
+                <p className="text-xl text-gray-400 mb-12 max-w-2xl">{t('sub_tagline')}</p>
                 <Link to="/signup" className="px-10 py-4 bg-gradient-to-r from-fusion-pink to-solar-orange text-white font-bold rounded-lg hover:scale-105 transition-transform text-xl">
-                    Start Building for Free
+                    {t('start_building')}
                 </Link>
             </main>
             <Footer />
