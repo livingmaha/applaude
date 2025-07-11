@@ -9,6 +9,7 @@ class PaymentAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'user', 'project', 'amount', 'email', 'paystack_reference', 'plan_type', 'created_at', 'updated_at')
     fieldsets = (
         ('Transaction Details', {'fields': ('id', 'paystack_reference', 'status', 'plan_type', 'amount')}),
+        ('Subscription Info', {'fields': ('subscription_code', 'plan_code')}),
         ('Associated Entities', {'fields': ('project', 'user', 'email')}),
         ('Timestamps', {'fields': ('created_at', 'updated_at')}),
     )
