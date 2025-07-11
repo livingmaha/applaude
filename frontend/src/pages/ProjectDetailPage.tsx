@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+// MODIFICATION: Added useSearchParams and useNavigate from react-router-dom
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../services/api';
 import Card from '../components/ui/Card';
 import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Download, Upload, SlidersHorizontal } from 'lucide-react';
@@ -35,6 +36,11 @@ const ProjectDetailPage = () => {
     const [project, setProject] = useState<ProjectDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    
+    // MODIFICATION: Added hooks to read URL and navigate
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+
 
     const authContext = useContext(AuthContext);
     if (!authContext) {
@@ -56,10 +62,16 @@ const ProjectDetailPage = () => {
     };
 
     useEffect(() => {
-        fetchProject();
-        const interval = setInterval(fetchProject, 5000); // Poll every 5 seconds
-        return () => clearInterval(interval);
-    }, [id]);
+        // MODIFICATION: This effect checks for the 'payment=success' URL parameter.
+        // If found, it redirects the user to their dashboard.
+        if (searchParams.get('payment') === 'success') {
+            navigate('/dashboard', { replace: true });
+        } else {
+            fetchProject();
+            const interval = setInterval(fetchProject, 5000); // Poll every 5 seconds
+            return () => clearInterval(interval);
+        }
+    }, [id, searchParams, navigate]);
 
     const handleSurveyToggle = async (surveyType: 'ux' | 'pmf') => {
         if (!project) return;
