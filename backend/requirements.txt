@@ -12,3 +12,4 @@ gunicorn
 django-storages
 boto3
 psycopg2-binary
+django-tenants
