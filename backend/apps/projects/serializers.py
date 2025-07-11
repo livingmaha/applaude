@@ -14,7 +14,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'status_message', 'user_persona_document', 'brand_palette',
             'enable_ux_survey', 'enable_pmf_survey', 'pmf_survey_questions',
             'app_ratings_summary', 'user_feedback_summary', 'survey_response_analytics',
-            'deployment_option', 'created_at', 'updated_at'
+            'deployment_option', 'created_at', 'updated_at', 'supported_languages'
         ]
         read_only_fields = [
             'status', 'status_message', 'user_persona_document', 'brand_palette',
