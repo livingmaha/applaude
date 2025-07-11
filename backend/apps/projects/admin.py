@@ -10,7 +10,7 @@ class ProjectAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {'fields': ('name', 'owner', 'source_url', 'app_type')}),
         ('Status', {'fields': ('status', 'status_message')}),
-        ('Subscription & Features', {'fields': ('is_premium_subscribed', 'enable_ux_survey', 'enable_pmf_survey')}),
+        ('Features & Deployment', {'fields': ('enable_ux_survey', 'enable_pmf_survey', 'deployment_option')}),
         ('AI Generated Assets', {'fields': ('user_persona_document', 'brand_palette')}),
         ('Aggregated Analytics', {'fields': ('app_ratings_summary', 'user_feedback_summary', 'survey_response_analytics')}),
         ('Timestamps', {'fields': ('created_at', 'updated_at')}),
