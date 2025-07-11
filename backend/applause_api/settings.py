@@ -22,6 +22,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'django_tenants', # Must be the first app
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -34,7 +35,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'channels',
-    'storages', # For S3 file storage
+    'storages',
 
     # Our apps
     'apps.users',
@@ -42,17 +43,27 @@ INSTALLED_APPS = [
     'apps.payments',
     'apps.surveys',
     'apps.chat',
-    'apps.api', # ADDED
+    'apps.api',
     'agents',
+    'apps.tenants', # New
+    'apps.tenant_data', # New
 ]
+
+DATABASE_ROUTERS = (
+    'django_tenants.routers.TenantSyncRouter',
+)
+
+TENANT_MODEL = "tenants.Tenant"
+TENANT_DOMAIN_MODEL = "tenants.Domain"
 
 # Add ASGI application setting for Channels
 ASGI_APPLICATION = 'applause_api.asgi.application'
 
 MIDDLEWARE = [
+    'django_tenants.middleware.main.TenantMainMiddleware', # Add to the top
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # CORS Middleware
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -86,12 +97,12 @@ WSGI_APPLICATION = 'applause_api.wsgi.application'
 if ENVIRONMENT == 'production':
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('RDS_DB_NAME'),
-            'USER': os.getenv('RDS_USERNAME'),
-            'PASSWORD': os.getenv('RDS_PASSWORD'),
-            'HOST': os.getenv('RDS_HOSTNAME'),
-            'PORT': os.getenv('RDS_PORT'),
+        'ENGINE': 'django_tenants.postgresql_backend', # Modified
+        'NAME': os.getenv('DB_NAME', 'applause'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'password'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
 else:
@@ -102,7 +113,7 @@ else:
         }
     }
 
-
+TENANT_CREATION_FAKES_MIGRATIONS = True
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
