@@ -1,4 +1,3 @@
-// frontend/src/contexts/AuthContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import apiClient from '../services/api';
 import paymentService from '../services/paymentService';
@@ -145,7 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (payload && payload.plan && paymentConversation.projectId) {
             try {
-                const paymentData = await paymentService.initializePayment(paymentConversation.projectId, payload.plan);
+                const paymentData = await paymentService.initializePayment(paymentConversation.projectId, payload.plan, 'USD');
                 setPaymentConversation(prev => ({
                     ...prev,
                     messages: [...prev.messages, { sender: 'ai', text: `Great! Redirecting you to our secure payment processor to complete your ${userMessageText} purchase.` }]
