@@ -15,6 +15,8 @@ from apps.users.models import CustomUser
 from .models import Payment
 from agents.tasks import run_code_generation
 from apps.api.models import ApiClient
+from agents.tasks import run_code_generation, run_qa_check, run_deployment # Add new tasks
+from celery import chain 
 
 # Base prices in USD
 BASE_PLAN_PRICES_USD = {
@@ -189,7 +191,12 @@ class PaystackWebhookView(APIView):
                                 user.save(update_fields=['is_premium_subscribed'])
 
                             if not payment.project.status.startswith('COMPLETE'):
-                                run_code_generation.delay(payment.project.id)
+                                full_pipeline = chain(
+                                    run_code_generation.s(payment.project.id),
+                                    run_qa_check.s(payment.project.id),
+                                    run_deployment.s(payment.project.id)
+                                )
+                                full_pipeline.delay()
                     except Payment.DoesNotExist:
                         print(f"Webhook Error: Payment with reference {reference} not found.")
                         return Response(status=status.HTTP_404_NOT_FOUND)
