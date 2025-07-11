@@ -1,3 +1,4 @@
+# backend/agents/tasks.py
 from celery import shared_task
 from apps.projects.models import Project
 from apps.surveys.models import SurveyResponse, AppRating
@@ -19,10 +20,9 @@ def run_market_analysis(self, project_id: int):
 
         agent = MarketAnalystAgent()
         agent.execute(project_id=project_id)
-        # The agent's execute method now sets the status to ANALYSIS_COMPLETE
     except Project.DoesNotExist as e:
         print(f"Project {project_id} not found for market analysis.")
-        raise self.retry(exc=e, countdown=60) # Retry in 60s if DB is slow
+        raise self.retry(exc=e, countdown=60)
     except Exception as e:
         Project.objects.filter(id=project_id).update(status=Project.ProjectStatus.FAILED)
         print(f"Error during market analysis for project {project_id}: {e}")
@@ -38,12 +38,11 @@ def run_design_analysis(self, project_id: int):
         if project.status != Project.ProjectStatus.ANALYSIS_COMPLETE:
             raise Exception("Cannot run design analysis: Market analysis is not yet complete.")
 
-        project.status = Project.Project_Status.DESIGN_PENDING
+        project.status = Project.ProjectStatus.DESIGN_PENDING
         project.save()
 
         agent = DesignAgent()
         agent.execute(project_id=project_id)
-        # The agent's execute method now sets the status to DESIGN_COMPLETE
     except Project.DoesNotExist as e:
         print(f"Project {project_id} not found for design analysis.")
         raise self.retry(exc=e, countdown=60)
@@ -59,16 +58,14 @@ def run_code_generation(self, project_id: int):
     """
     try:
         project = Project.objects.get(id=project_id)
-        # Final check for payment and status before running the most expensive task
         if project.status == Project.ProjectStatus.DESIGN_COMPLETE and project.payments.filter(status='SUCCESSFUL').exists():
             project.status = Project.ProjectStatus.CODE_GENERATION
             project.save()
 
             agent = CodeGenAgent()
             agent.execute(project_id=project.id)
-            # The agent's execute method now sets the status to COMPLETED
         else:
-            raise Exception("Cannot run code generation: Prerequisities (design complete & payment) not met.")
+            raise Exception("Cannot run code generation: Prerequisites (design complete & payment) not met.")
     except Project.DoesNotExist as e:
         print(f"Project {project_id} not found for code generation.")
         raise self.retry(exc=e, countdown=60)
@@ -79,6 +76,9 @@ def run_code_generation(self, project_id: int):
 
 @shared_task
 def process_feedback_data(project_id):
+    """
+    Asynchronously processes and aggregates feedback data for a project.
+    """
     project = Project.objects.get(id=project_id)
     
     # Process App Ratings
@@ -87,20 +87,15 @@ def process_feedback_data(project_id):
         summary = ratings.values('rating').annotate(count=Count('rating')).order_by('-rating')
         project.app_ratings_summary = {item['rating']: item['count'] for item in summary}
 
-    # Process Survey Responses (Example for a feature request question)
+    # Process Survey Responses
     responses = SurveyResponse.objects.filter(project=project, survey_type='PMF')
     if responses.exists():
-        feature_requests = {}
-        # This is a simplified example. A real implementation would parse 'responses' JSON
-        # and look for specific question IDs related to feature requests.
-        # For demonstration, we'll just count total responses.
+        # This is a simplified example.
         project.survey_response_analytics = {
             'total_responses': responses.count(),
-            # ... more complex analytics would go here
         }
 
     project.save()
-
 
 @shared_task
 def run_ai_orchestration():
@@ -114,9 +109,8 @@ def run_ai_orchestration():
         if analytics and analytics.get('feature_requests'):
             for feature, percentage in analytics['feature_requests'].items():
                 if percentage > 70: # Build threshold
-                    # Trigger an app update
                     print(f"Orchestrator: High demand for '{feature}' in project {project.name}. Triggering update.")
                     run_code_generation.delay(project.id, update_feature=feature)
                     project.status = Project.ProjectStatus.UPDATE_PENDING
                     project.save()
-                    break # Process one feature update at a time
+                    break
