@@ -7,6 +7,7 @@ from .design_agent import DesignAgent
 from .code_generation_agent import CodeGenAgent
 from .qa_agent import QAAgent
 from .deployment_agent import DeploymentAgent
+from .cybersecurity_agent import CybersecurityAgent
 from django.db.models import Count, Avg
 import json
 
@@ -138,4 +139,15 @@ def run_deployment(self, project_id: int):
     except Exception as e:
         Project.objects.filter(id=project_id).update(status=Project.ProjectStatus.FAILED)
         print(f"Error during deployment for project {project_id}: {e}")
+        raise
+
+@shared_task(bind=True)
+def run_security_scan(self, project_id: int):
+    """Celery task to execute the Cybersecurity Agent."""
+    try:
+        agent = CybersecurityAgent()
+        agent.execute(project_id=project_id)
+    except Exception as e:
+        Project.objects.filter(id=project_id).update(status=Project.ProjectStatus.FAILED)
+        print(f"Error during security scan for project {project_id}: {e}")
         raise
