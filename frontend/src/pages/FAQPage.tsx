@@ -1,76 +1,84 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import Card from '../components/ui/Card';
 import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+interface FAQItemProps {
+  question: string;
+  answer: string;
+  isOpen: boolean;
+  onClick: () => void;
+}
+
+const FAQItem = ({ question, answer, isOpen, onClick }: FAQItemProps) => {
+  return (
+    <div className="border-b border-gray-700 py-6">
+      <button
+        onClick={onClick}
+        className="w-full flex justify-between items-center text-left text-lg font-semibold text-soft-white"
+      >
+        <span>{question}</span>
+        <ChevronDown
+          className={`transform transition-transform duration-300 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+          size={24}
+        />
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-500 ease-in-out ${
+          isOpen ? 'max-h-screen mt-4' : 'max-h-0'
+        }`}
+      >
+        <p className="text-gray-400">{answer}</p>
+      </div>
+    </div>
+  );
+};
 
 const FAQPage = () => {
-    const [open, setOpen] = useState<number | null>(null);
+  const { t } = useTranslation();
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-    const faqs = [
-        {
-            question: "How does the AI work?",
-            answer: "Our platform uses a swarm of specialized AI agents. Each agent is an expert in a specific domain, like market analysis, design, or coding. They work together to build your app from the ground up, just like a human team would."
-        },
-        {
-            question: "What do I get when I download my app?",
-            answer: "You receive the complete source code for a native mobile application, built for the platform you selected (iOS or Android). This includes all the files you need to compile and submit your app to the app stores."
-        },
-        {
-            question: "Can I really do this with no coding experience?",
-            answer: "Absolutely! Our platform is designed for non-technical users. You provide your website URL and make some high-level choices, and our AI agents handle all the coding for you."
-        },
-        {
-            question: "What if I want to make changes to my app after it's generated?",
-            answer: "You own the source code, so you or a developer can make any changes you want. We are also working on a feature to allow you to make changes directly on our platform."
-        },
-        {
-            question: "How long does it take to get my app?",
-            answer: "The initial AI analysis and design phase takes just a few minutes. The full code generation can take a bit longer, but you'll have a complete, ready-to-use app in a fraction of the time it would take to build one traditionally."
-        },
-        {
-            question: "Is my app unique?",
-            answer: "Yes. While our AI uses best practices and pre-defined architectures, the final app is tailored to your brand, content, and the user persona generated from your website."
-        },
-        {
-            question: "What if I need help?",
-            answer: "We have a dedicated support team ready to assist you. You can reach out to us via the chat on our platform or by emailing support@applause.ai."
-        }
-    ];
+  const handleToggle = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
 
-    const toggle = (index: number) => {
-        if (open === index) {
-            return setOpen(null);
-        }
-        setOpen(index);
-    };
+  const faqs = [
+    { q: 'faq_q1', a: 'faq_a1' },
+    { q: 'faq_q2', a: 'faq_a2' },
+    { q: 'faq_q3', a: 'faq_a3' },
+    { q: 'faq_q4', a: 'faq_a4' },
+    { q: 'faq_q5', a: 'faq_a5' },
+    { q: 'faq_q6', a: 'faq_a6' },
+    { q: 'faq_q7', a: 'faq_a7' },
+  ];
 
-    return (
-        <div className="min-h-screen bg-quantum-black text-soft-white">
-            <Header />
-            <main className="pt-32 pb-16 px-8 max-w-4xl mx-auto">
-                <h1 className="text-5xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-ion-blue to-fusion-pink">
-                    Frequently Asked Questions
-                </h1>
-                <div className="space-y-4">
-                    {faqs.map((faq, index) => (
-                        <Card key={index} className="p-0">
-                            <div className="p-6 cursor-pointer flex justify-between items-center" onClick={() => toggle(index)}>
-                                <h2 className="text-xl font-bold">{faq.question}</h2>
-                                <ChevronDown className={`transform transition-transform ${open === index ? 'rotate-180' : ''}`} />
-                            </div>
-                            {open === index && (
-                                <div className="p-6 border-t border-white border-opacity-10">
-                                    <p className="text-gray-300">{faq.answer}</p>
-                                </div>
-                            )}
-                        </Card>
-                    ))}
-                </div>
-            </main>
-            <Footer />
+  return (
+    <div className="min-h-screen bg-quantum-black text-soft-white">
+      <Header />
+      <main className="py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-ion-blue to-fusion-pink">
+            {t('faq_title')}
+          </h1>
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <FAQItem
+                key={index}
+                question={t(faq.q)}
+                answer={t(faq.a)}
+                isOpen={openIndex === index}
+                onClick={() => handleToggle(index)}
+              />
+            ))}
+          </div>
         </div>
-    );
+      </main>
+      <Footer />
+    </div>
+  );
 };
 
 export default FAQPage;
