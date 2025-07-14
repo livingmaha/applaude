@@ -56,6 +56,12 @@ const Dashboard = () => {
 3. Click on the link (the app will start to download).
 4. When the download finishes, open the mobile app to install.
     `;
+    
+    const handleRequestMaintenance = (projectId: number) => {
+        // Open the Applause Prime chat modal
+        // This will be implemented in a future sprint
+        alert(`Requesting maintenance for project ${projectId}`);
+    };
 
     return (
         <div className="min-h-screen text-soft-white bg-quantum-black p-8">
@@ -117,6 +123,9 @@ const Dashboard = () => {
                                 </div>
                                 <div className="text-sm text-gray-400 mb-2 whitespace-pre-wrap">{installationInstructions}</div>
                                 <button onClick={() => handleCopy(installationInstructions)} className="flex items-center gap-2 text-sm text-ion-blue hover:underline"><Copy size={14}/> Copy Instructions</button>
+                                <button onClick={() => handleRequestMaintenance(project.id)} className="mt-4 w-full bg-ion-blue text-black font-bold py-2 rounded-lg hover:bg-opacity-90 transition-all duration-300">
+                                    Request Maintenance
+                                </button>
                             </div>
                         )}
                     </Card>
