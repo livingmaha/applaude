@@ -1,44 +1,50 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-
-import SignUpPage from './pages/SignUpPage';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
-import CreateProjectPage from './pages/CreateProjectPage';
-import ProjectDetailPage from './pages/ProjectDetailPage';
-import ProtectedRoute from './components/core/ProtectedRoute';
-import AboutPage from './pages/AboutPage';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
-import ProfilePage from './pages/ProfilePage';
-import PreviewPage from './pages/PreviewPage'; 
-import UpgradeSubscriptionPage from './pages/UpgradeSubscriptionPage';
-import NotFoundPage from './pages/NotFoundPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import DashboardPage from './pages/DashboardPage';
+import CreateProjectPage from './pages/CreateProjectPage';
+import ProjectPreviewPage from './pages/ProjectPreviewPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
+import AboutPage from './pages/AboutPage';
 import FAQPage from './pages/FAQPage';
-import ApiPage from './pages/ApiPage'; // Added
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+  const auth = useAuth();
+  return auth.isAuthenticated ? children : <Navigate to="/login" />;
+};
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-
           <Route path="/" element={<LandingPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/login" element={<LoginPage />} />
           <Route path="/faq" element={<FAQPage />} />
-          <Route path="/api" element={<ApiPage />} /> 
-
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/projects/create" element={<CreateProjectPage />} />
-            <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/projects/:id/preview" element={<PreviewPage />} />
-            <Route path="/upgrade" element={<UpgradeSubscriptionPage />} />
-          </Route>
-
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          } />
+          <Route path="/create-project" element={
+            <PrivateRoute>
+              <CreateProjectPage />
+            </PrivateRoute>
+          } />
+           <Route path="/projects/:id/preview" element={
+            <PrivateRoute>
+              <ProjectPreviewPage />
+            </PrivateRoute>
+          } />
+          <Route path="/projects/:id" element={
+            <PrivateRoute>
+              <ProjectDetailPage />
+            </PrivateRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>
