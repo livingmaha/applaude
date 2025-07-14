@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 
 interface AppSimulatorProps {
   children: React.ReactNode;
@@ -12,6 +11,8 @@ interface AppSimulatorProps {
 }
 
 const AppSimulator: React.FC<AppSimulatorProps> = ({ children, palette }) => {
+  const [phoneType, setPhoneType] = useState('iPhone 15 Pro');
+
   const screenStyle = {
     backgroundColor: palette?.background || '#FFFFFF',
     color: palette?.text_dark || '#000000',
@@ -29,6 +30,17 @@ const AppSimulator: React.FC<AppSimulatorProps> = ({ children, palette }) => {
             {children}
           </div>
         </div>
+      </div>
+      <div className="mt-4">
+        <select
+          value={phoneType}
+          onChange={(e) => setPhoneType(e.target.value)}
+          className="w-full bg-gray-700 bg-opacity-30 text-soft-white p-3 rounded-lg focus:border-ion-blue focus:ring-0 focus:outline-none"
+        >
+          <option value="iPhone 15 Pro">iPhone 15 Pro</option>
+          <option value="Google Pixel 8">Google Pixel 8</option>
+          <option value="Samsung Galaxy S24">Samsung Galaxy S24</option>
+        </select>
       </div>
     </div>
   );
