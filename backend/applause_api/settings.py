@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'agents',
     'apps.tenants', # New
     'apps.tenant_data', # New
+    'apps.blog'
 ]
 
 DATABASE_ROUTERS = (
