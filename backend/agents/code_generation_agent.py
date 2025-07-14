@@ -1,4 +1,3 @@
-
 from .base_agent import BaseAgent
 from .prompts.super_prompts import CODE_GEN_PERSONA, CODE_GEN_GOAL
 from apps.projects.models import Project
@@ -141,6 +140,7 @@ class CodeGenAgent(BaseAgent):
 
         **Step 3: Propose Logical File Structure for {app_type}**
         * Outline a complete and professional file/folder structure for the `{app_type}` application.
+        * If the `app_type` is 'BOTH', generate two separate, native codebases: one for iOS (Swift/SwiftUI) and one for Android (Kotlin).
         * Include folders for UI components, screens/views, utilities, data models, networking, and styling/theming.
         * **Explicitly include structure for the Survey/Feedback module.**
 
@@ -149,7 +149,7 @@ class CodeGenAgent(BaseAgent):
         * For each file, start with a comment specifying the full file path.
         * **Crucially, integrate the `Brand Color Palette` into a dedicated theme/style file.** All UI elements in the generated code MUST reference colors from this palette, not hardcoded values.
         * For content, use placeholder data that aligns with the inferred app purpose (e.g., `dummyProducts`, `sampleArticles`).
-        * Ensure the code is clean, well-commented, and follows best practices for {app_type} development (e.g., for Android, use Kotlin; for iOS, use Swift; if 'BOTH', default to a simple Flutter structure unless specified otherwise, but prioritize native if `app_type` is explicit `ANDROID` or `IOS`).
+        * Ensure the code is clean, well-commented, and follows best practices for {app_type} development. For iOS, use Swift/SwiftUI and maximize the use of modern UI features like "liquid glass" effects. For Android, use Kotlin.
         * **Implement the survey display and data collection features.** Provide a clear button for users to trigger the survey, and a dismiss option for pop-ups. Include tracking logic.
         * The output format MUST be a series of distinct code blocks, each clearly preceded by its file path.
 
@@ -236,7 +236,7 @@ class CodeGenAgent(BaseAgent):
                 YourAppName/
                 ├── YourAppNameApp.swift
                 ├── Views/ # AuthView, HomeView, DetailView, ProfileView
-                ├── Components/ # Generic UI components
+                ├── Components/ # Generic UI components, LiquidGlassView
                 ├── Feedback/ # NEW: SurveyPromptView, FeedbackView, RatingView, SurveyModels.swift
                 ├── Models/ # Product, User, SurveyResponse, AppRating, Feedback
                 ├── Services/ # API service for backend communication, AnalyticsService (for survey tracking)
@@ -244,6 +244,29 @@ class CodeGenAgent(BaseAgent):
                 ```
 
             **Step 4: Generate Code - Detailed Implementation**
+
+            ```swift
+            // File: YourAppName/Components/LiquidGlassView.swift
+            import SwiftUI
+
+            struct LiquidGlassView: View {
+                var body: some View {
+                    ZStack {
+                        Rectangle()
+                            .fill(LinearGradient(
+                                gradient: Gradient(colors: [Color.white.opacity(0.1), Color.white.opacity(0.05)]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ))
+                            .blur(radius: 10)
+                        
+                        Rectangle()
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    }
+                    .background(Color.clear)
+                }
+            }
+            ```
 
             ```kotlin
             // File: app/src/main/java/com/yourcompany/yourapp/ui/theme/Color.kt
