@@ -4,7 +4,7 @@ import apiClient from '../services/api';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import { useTranslation } from 'react-i18next';
-import { FileText, Type } from 'lucide-react';
+import { FileText, Type, ChevronDown } from 'lucide-react';
 
 const CreateProjectPage = () => {
     const [creationMode, setCreationMode] = useState<'form' | 'zero_touch'>('form');
@@ -16,7 +16,26 @@ const CreateProjectPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+
+    const allLanguages = [
+        { code: 'en', name: 'English' }, { code: 'es', name: 'Español' },
+        { code: 'fr', name: 'Français' }, { code: 'de', name: 'Deutsch' },
+        { code: 'zh', name: '中文' }, { code: 'ja', name: '日本語' },
+        { code: 'ar', name: 'العربية' }, { code: 'hi', name: 'हिन्दी' },
+        { code: 'pt', name: 'Português' }, { code: 'ru', name: 'Русский' }
+    ];
+
+    const [supportedLanguages, setSupportedLanguages] = useState<string[]>([i18n.language]);
+    const [isLangDropdownOpen, setLangDropdownOpen] = useState(false);
+
+    const handleLanguageToggle = (langCode: string) => {
+        setSupportedLanguages(prev =>
+            prev.includes(langCode)
+                ? prev.filter(l => l !== langCode)
+                : [...prev, langCode]
+        );
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -30,6 +49,8 @@ const CreateProjectPage = () => {
         setLoading(true);
 
         const formData = new FormData();
+        formData.append('supported_languages', JSON.stringify(supportedLanguages));
+
         if (creationMode === 'form') {
             formData.append('name', name);
             formData.append('source_url', sourceUrl);
@@ -40,9 +61,8 @@ const CreateProjectPage = () => {
             if (requirementsDocument) {
                 formData.append('requirements_document', requirementsDocument);
             }
-             formData.append('app_type', 'BOTH'); // Default for zero-touch
+            formData.append('app_type', 'BOTH'); // Default for zero-touch
         }
-
 
         try {
             const response = await apiClient.post('/projects/', formData, {
@@ -50,7 +70,7 @@ const CreateProjectPage = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-            navigate(`/projects/${response.data.id}/preview`);
+            navigate(`/projects/${response.data.id}`);
         } catch (err: any) {
             setError('Failed to create project. Please check the details and try again.');
             console.error(err);
@@ -104,7 +124,7 @@ const CreateProjectPage = () => {
                                 <textarea
                                     value={initialPrompt}
                                     onChange={(e) => setInitialPrompt(e.target.value)}
-                                    placeholder="e.g., 'Build me a mobile app for my e-commerce store that sells vintage clothing. It should have a product catalog and a simple checkout.'"
+                                    placeholder="e.g., 'Build me a mobile app for my e-commerce store that sells vintage clothing...'"
                                     className="w-full h-40 bg-gray-700 bg-opacity-30 text-soft-white p-3 rounded-lg focus:border-ion-blue focus:ring-0 focus:outline-none"
                                     required
                                 ></textarea>
@@ -115,6 +135,31 @@ const CreateProjectPage = () => {
                             </div>
                         </>
                     )}
+
+                    <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-300">App Languages</label>
+                        <div className="relative">
+                            <button type="button" onClick={() => setLangDropdownOpen(!isLangDropdownOpen)} className="w-full bg-gray-700 bg-opacity-30 text-soft-white p-3 rounded-lg flex justify-between items-center">
+                                <span>{supportedLanguages.length > 0 ? `${supportedLanguages.length} language(s) selected` : "Select Languages"}</span>
+                                <ChevronDown size={20} />
+                            </button>
+                            {isLangDropdownOpen && (
+                                <div className="absolute z-10 w-full mt-1 bg-gray-800 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {allLanguages.map(lang => (
+                                        <label key={lang.code} className="flex items-center px-4 py-2 hover:bg-ion-blue hover:text-black cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={supportedLanguages.includes(lang.code)}
+                                                onChange={() => handleLanguageToggle(lang.code)}
+                                                className="form-checkbox h-5 w-5 text-fusion-pink bg-gray-700 border-gray-600 rounded focus:ring-fusion-pink"
+                                            />
+                                            <span className="ml-3 text-soft-white">{lang.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
                     {error && <p className="text-solar-orange text-sm">{error}</p>}
 
