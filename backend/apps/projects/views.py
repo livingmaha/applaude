@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from .models import Project
 from .serializers import ProjectSerializer
-from agents.tasks import run_market_analysis, run_design_analysis
+from agents.tasks import run_market_analysis, run_design_analysis, run_code_generation, run_security_scan, run_qa_check, run_deployment
 from celery import chain
 import zipfile
 import io
@@ -32,18 +32,20 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # First, save the project instance with the owner
         project = serializer.save(owner=self.request.user)
 
-        # Create a chain of tasks. The design analysis will only run
-        # after the market analysis successfully completes.
-        # The project.id is passed as an argument to each task.
+        # Create a chain of tasks.
         analysis_pipeline = chain(
             run_market_analysis.s(project.id),
-            run_design_analysis.s(project.id)
+            run_design_analysis.s(project.id),
+            run_code_generation.s(project.id),
+            run_security_scan.s(project.id),
+            run_qa_check.s(project.id),
+            run_deployment.s(project.id)
         )
         
         # Execute the pipeline in the background.
         analysis_pipeline.delay()
 
-@action(detail=True, methods=['get'], url_path='download-code')
+    @action(detail=True, methods=['get'], url_path='download-code')
     def download_codebase(self, request, pk=None):
         """
         Creates a ZIP archive of the generated codebase and returns it for download.
