@@ -6,10 +6,12 @@ import { MessageSquare, Globe } from 'lucide-react';
 import ChatWindow from '../core/ChatWindow';
 import logoIcon from '../../assets/images/logo_icon.png';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Header = () => {
     const { t, i18n } = useTranslation();
     const [isLangDropdownOpen, setLangDropdownOpen] = useState(false);
+    const auth = useAuth();
 
     const authContext = useContext(AuthContext);
     if (!authContext) throw new Error("Header must be within AuthProvider");
@@ -35,18 +37,19 @@ const Header = () => {
         setLangDropdownOpen(false);
     };
 
-    return (
-        <header className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-30">
-            <Link to="/" className="flex items-center gap-2">
-                <img src={logoIcon} alt="Applause Logo" className="w-8 h-8" />
-                <span className="text-2xl font-bold text-soft-white">Applause</span>
-            </Link>
+return (
+        <header /* ... */>
+            {/* ... Logo */}
             <nav className="space-x-6 hidden md:flex items-center">
                 <Link to="/about" className="text-gray-300 hover:text-ion-blue transition-colors">{t('about')}</Link>
                 <Link to="/faq" className="text-gray-300 hover:text-ion-blue transition-colors">{t('faq')}</Link>
-                {isAuthenticated ? (
+                <Link to="/blog" className="text-gray-300 hover:text-ion-blue transition-colors">Blog</Link>
+                {auth.isAuthenticated ? (
                     <>
                         <Link to="/dashboard" className="text-gray-300 hover:text-ion-blue transition-colors">{t('dashboard')}</Link>
+                        {auth.user?.is_superuser && (
+                           <Link to="/admin/blog" className="text-gray-300 hover:text-ion-blue transition-colors">Admin</Link>
+                        )}
                     </>
                 ) : (
                     <>
