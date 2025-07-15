@@ -9,7 +9,8 @@ import ProjectDetailPage from './pages/ProjectDetailPage';
 import AboutPage from './pages/AboutPage';
 import FAQPage from './pages/FAQPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import SuperuserRoute from './components/auth/SuperuserRoute'; // Import SuperuserRoute
+import SuperuserRoute from './components/auth/SuperuserRoute';
+import ProjectAnalyticsPage from './pages/ProjectAnalyticsPage';
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const auth = useAuth();
@@ -35,6 +36,7 @@ function App() {
           <Route path="/create-project" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
           <Route path="/projects/:id/preview" element={<PrivateRoute><ProjectPreviewPage /></PrivateRoute>} />
           <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
+          <Route path="/projects/:id/analytics" element={<PrivateRoute><ProjectAnalyticsPage /></PrivateRoute>} />
 
           {/* Superuser Routes */}
           <Route path="/admin/blog" element={<SuperuserRoute><BlogDashboard /></SuperuserRoute>} />
