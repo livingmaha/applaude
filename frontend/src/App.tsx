@@ -11,6 +11,8 @@ import FAQPage from './pages/FAQPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import SuperuserRoute from './components/auth/SuperuserRoute';
 import ProjectAnalyticsPage from './pages/ProjectAnalyticsPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const auth = useAuth();
@@ -30,6 +32,8 @@ function App() {
           <Route path="/blog/:id" element={<BlogPostPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
           {/* Private Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
