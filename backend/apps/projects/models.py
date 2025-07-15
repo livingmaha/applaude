@@ -1,10 +1,11 @@
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from apps.tenants.models import Tena
 
 class Project(models.Model):
     """
-    Represents a single mobile app project created by a user.
+    Represents a single mobile app project, now tenant-aware.
     """
     class ProjectStatus(models.TextChoices):
         PENDING = 'PENDING', _('Pending')
@@ -36,7 +37,7 @@ class Project(models.Model):
 
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='projects')
-    source_url = models.URLField(max_length=500)
+    source_url = models.URLField(max_length=500, blank=True, null=True)
     app_type = models.CharField(max_length=10, choices=AppType.choices, default=AppType.ANDROID)
     status = models.CharField(max_length=30, choices=ProjectStatus.choices, default=ProjectStatus.PENDING)
     status_message = models.TextField(blank=True, null=True)
@@ -60,6 +61,7 @@ class Project(models.Model):
     # **MODIFIED: Add fields for "Zero-Touch" UI**
     initial_prompt = models.TextField(blank=True, null=True)
     requirements_document = models.FileField(upload_to='requirements_documents/', blank=True, null=True)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='projects')
 
 
     class LastCompletedStep(models.TextChoices):
@@ -72,6 +74,15 @@ class Project(models.Model):
         choices=LastCompletedStep.choices,
         default=LastCompletedStep.CREATED
     )
+
+    def save(self, *args, **kwargs):
+        """
+        Overrides the save method to automatically set the tenant
+        from the project's owner.
+        """
+        if not self.tenant_id and self.owner and self.owner.tenant_id:
+            self.tenant = self.owner.tenant
+        super(Project, self).save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} by {self.owner.username}"
