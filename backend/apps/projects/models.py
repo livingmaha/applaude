@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 class Project(models.Model):
@@ -35,7 +35,7 @@ class Project(models.Model):
         PLAY_STORE = 'PLAY_STORE', 'Play Store'
 
     name = models.CharField(max_length=255)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='projects')
     source_url = models.URLField(max_length=500)
     app_type = models.CharField(max_length=10, choices=AppType.choices, default=AppType.ANDROID)
     status = models.CharField(max_length=30, choices=ProjectStatus.choices, default=ProjectStatus.PENDING)
@@ -56,6 +56,11 @@ class Project(models.Model):
     app_ratings_summary = models.JSONField(default=dict)
     survey_response_analytics = models.JSONField(default=dict)
     deployment_platform = models.CharField(max_length=50, blank=True, null=True)
+    
+    # **MODIFIED: Add fields for "Zero-Touch" UI**
+    initial_prompt = models.TextField(blank=True, null=True)
+    requirements_document = models.FileField(upload_to='requirements_documents/', blank=True, null=True)
+
 
     class LastCompletedStep(models.TextChoices):
         CREATED = 'CREATED', _('Created')
@@ -73,5 +78,3 @@ class Project(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-
-  
