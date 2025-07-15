@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
 import AppSimulator from '../components/core/AppSimulator';
 import ChatWindow from '../components/core/ChatWindow';
 import DeploymentModal from '../components/core/DeploymentModal';
 import PaymentModal from '../components/core/PaymentModal';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 
 interface Project {
     id: number;
@@ -20,26 +20,67 @@ interface Project {
     };
 }
 
+const ProjectSelector: React.FC<{ currentProjectId: string; userProjects: Project[] }> = ({ currentProjectId, userProjects }) => {
+    const navigate = useNavigate();
+
+    const handleProjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newProjectId = event.target.value;
+        navigate(`/projects/${newProjectId}/preview`);
+    };
+
+    return (
+        <div className="relative">
+            <select
+                value={currentProjectId}
+                onChange={handleProjectChange}
+                className="appearance-none p-2 pr-8 border border-gray-300 rounded-md bg-white text-black font-bold focus:outline-none focus:ring-2 focus:ring-ion-blue"
+            >
+                {userProjects.map(project => (
+                    <option key={project.id} value={project.id}>
+                        {project.name}
+                    </option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-black pointer-events-none" />
+        </div>
+    );
+};
+
 const BuildAndPreviewPage = () => {
     const { id } = useParams<{ id: string }>();
     const [project, setProject] = useState<Project | null>(null);
+    const [allProjects, setAllProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isDeploymentModalOpen, setDeploymentModalOpen] = useState(false);
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
-
-    // State for chat window - required by the component
     const [chatMessages, setChatMessages] = useState<{text: string, sender: string}[]>([]);
     const [chatInput, setChatInput] = useState('');
 
     useEffect(() => {
-        const fetchProject = async () => {
+        const fetchProjectData = async () => {
             if (!id) return;
+            setLoading(true);
             try {
-                const response = await apiClient.get(`/projects/${id}/`);
-                setProject(response.data);
-                if (response.data.status !== 'COMPLETED') {
-                    setTimeout(fetchProject, 5000);
+                const projectDetailsPromise = apiClient.get(`/projects/${id}/`);
+                const allProjectsPromise = apiClient.get('/projects/');
+                
+                const [detailsResponse, projectsResponse] = await Promise.all([projectDetailsPromise, allProjectsPromise]);
+
+                setProject(detailsResponse.data);
+                setAllProjects(projectsResponse.data);
+
+                if (detailsResponse.data.status !== 'COMPLETED') {
+                    // Set up polling only if the project isn't completed
+                    const interval = setInterval(() => {
+                        apiClient.get(`/projects/${id}/`).then(res => {
+                           setProject(res.data)
+                           if (res.data.status === 'COMPLETED') {
+                               clearInterval(interval);
+                           }
+                        }).catch(console.error);
+                    }, 5000);
+                    return () => clearInterval(interval);
                 }
             } catch (err) {
                 setError('Failed to fetch project details.');
@@ -49,21 +90,19 @@ const BuildAndPreviewPage = () => {
             }
         };
 
-        fetchProject();
+        fetchProjectData();
     }, [id]);
 
     const openDeploymentModal = () => setDeploymentModalOpen(true);
     const closeDeploymentModal = () => setDeploymentModalOpen(false);
-
     const openPaymentModal = () => setPaymentModalOpen(true);
     const closePaymentModal = () => setPaymentModalOpen(false);
-
+    
     const handleDeploymentOptionClick = () => {
         closeDeploymentModal();
         openPaymentModal();
     };
     
-    // Dummy function for chat window prop
     const handleSendMessage = (message: string | object) => {
         console.log("Sending message:", message);
         const userMessage = typeof message === 'string' ? message : (message as any).text;
@@ -71,16 +110,21 @@ const BuildAndPreviewPage = () => {
     };
 
     if (loading) {
-        return <div className="min-h-screen bg-quantum-black text-soft-white flex items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-ion-blue" /></div>;
+        return <div className="min-h-screen bg-black text-white flex items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-ion-blue" /></div>;
     }
 
     if (error) {
-        return <div className="min-h-screen bg-quantum-black text-soft-white flex items-center justify-center">{error}</div>;
+        return <div className="min-h-screen bg-black text-white flex items-center justify-center">{error}</div>;
     }
 
     return (
-        <div className="min-h-screen bg-quantum-black text-soft-white p-8">
-            <h1 className="text-4xl font-bold text-center mb-8">{project?.name} - Build & Preview</h1>
+        <div className="min-h-screen bg-black text-white p-8">
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-bold">{project?.name} - Build & Preview</h1>
+                {allProjects.length > 1 && id && (
+                    <ProjectSelector currentProjectId={id} userProjects={allProjects} />
+                )}
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
