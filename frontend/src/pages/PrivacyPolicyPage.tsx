@@ -14,7 +14,7 @@ const PrivacyPolicyPage = () => {
                     <p>We only ask for personal information when we truly need it to provide a service to you. We collect it by fair and lawful means, with your knowledge and consent. We also let you know why we’re collecting it and how it will be used.</p>
 
                     <h2 className="text-2xl font-bold mt-8 mb-4">Information We Collect</h2>
-                    <p>Log data, information about your device, and personal information you provide to us directly.</p>
+                    <p>Log data, information about your device, and personal information you provide to us directly, Simple!</p>
                 </div>
             </main>
             <Footer />
