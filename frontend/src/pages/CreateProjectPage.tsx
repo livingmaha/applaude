@@ -1,68 +1,64 @@
-import React, { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
+import { AuthContext } from '../contexts/AuthContext';
 import Card from '../components/ui/Card';
-import Input from '../components/ui/Input';
-import { useTranslation } from 'react-i18next';
-import { FileText, Type, ChevronDown } from 'lucide-react';
+import { Loader2, UploadCloud, Link as LinkIcon, FileText } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/Alert';
+
+type AppType = 'ANDROID' | 'IOS' | 'BOTH';
+type CreateMode = 'url' | 'zero-touch';
 
 const CreateProjectPage = () => {
-    const [creationMode, setCreationMode] = useState<'form' | 'zero_touch'>('form');
-    const [name, setName] = useState('');
+    const [createMode, setCreateMode] = useState<CreateMode>('url');
+    const [projectName, setProjectName] = useState('');
     const [sourceUrl, setSourceUrl] = useState('');
-    const [appType, setAppType] = useState('ANDROID');
+    const [appType, setAppType] = useState<AppType>('ANDROID');
     const [initialPrompt, setInitialPrompt] = useState('');
     const [requirementsDocument, setRequirementsDocument] = useState<File | null>(null);
+
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { t, i18n } = useTranslation();
+    const authContext = useContext(AuthContext);
 
-    const allLanguages = [
-        { code: 'en', name: 'English' }, { code: 'es', name: 'Español' },
-        { code: 'fr', name: 'Français' }, { code: 'de', name: 'Deutsch' },
-        { code: 'zh', name: '中文' }, { code: 'ja', name: '日本語' },
-        { code: 'ar', name: 'العربية' }, { code: 'hi', name: 'हिन्दी' },
-        { code: 'pt', name: 'Português' }, { code: 'ru', name: 'Русский' }
-    ];
-
-    const [supportedLanguages, setSupportedLanguages] = useState<string[]>([i18n.language]);
-    const [isLangDropdownOpen, setLangDropdownOpen] = useState(false);
-
-    const handleLanguageToggle = (langCode: string) => {
-        setSupportedLanguages(prev =>
-            prev.includes(langCode)
-                ? prev.filter(l => l !== langCode)
-                : [...prev, langCode]
-        );
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            setRequirementsDocument(e.target.files[0]);
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            setRequirementsDocument(event.target.files[0]);
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
         setLoading(true);
+        setError('');
 
+        // Use FormData to handle file uploads
         const formData = new FormData();
-        formData.append('supported_languages', JSON.stringify(supportedLanguages));
+        formData.append('name', projectName);
+        formData.append('app_type', appType);
 
-        if (creationMode === 'form') {
-            formData.append('name', name);
+        if (createMode === 'url') {
+            if (!sourceUrl) {
+                setError('Source URL is required for this creation method.');
+                setLoading(false);
+                return;
+            }
             formData.append('source_url', sourceUrl);
-            formData.append('app_type', appType);
-        } else {
-            formData.append('name', `App from prompt: ${initialPrompt.substring(0, 20)}...`);
-            formData.append('initial_prompt', initialPrompt);
+        } else { // zero-touch
+            if (!initialPrompt && !requirementsDocument) {
+                setError('Please provide either an initial prompt or a requirements document.');
+                setLoading(false);
+                return;
+            }
+            if (initialPrompt) {
+                formData.append('initial_prompt', initialPrompt);
+            }
             if (requirementsDocument) {
                 formData.append('requirements_document', requirementsDocument);
             }
-            formData.append('app_type', 'BOTH'); // Default for zero-touch
         }
+
 
         try {
             const response = await apiClient.post('/projects/', formData, {
@@ -70,104 +66,183 @@ const CreateProjectPage = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-            navigate(`/projects/${response.data.id}`);
+            const newProject = response.data;
+            // Navigate to the new project's detail page
+            navigate(`/projects/${newProject.id}`);
         } catch (err: any) {
-            setError('Failed to create project. Please check the details and try again.');
+            const errorMessage = err.response?.data?.detail || 'An unexpected error occurred. Please try again.';
+            setError(errorMessage);
             console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <div className="flex items-center justify-center min-h-screen p-4 bg-quantum-black">
-            <Card className="w-full max-w-2xl p-8">
-                <h2 className="text-3xl font-bold text-center text-soft-white mb-8">{t('new_project')}</h2>
-
-                <div className="flex justify-center mb-6 border border-gray-700 rounded-lg p-1">
-                    <button onClick={() => setCreationMode('form')} className={`w-1/2 py-2 rounded-md transition-all ${creationMode === 'form' ? 'bg-ion-blue text-black' : 'text-gray-300'}`}>
-                        Guided Form
-                    </button>
-                    <button onClick={() => setCreationMode('zero_touch')} className={`w-1/2 py-2 rounded-md transition-all ${creationMode === 'zero_touch' ? 'bg-ion-blue text-black' : 'text-gray-300'}`}>
-                        Zero-Touch AI
-                    </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {creationMode === 'form' ? (
-                        <>
-                            <div>
-                                <label className="block mb-2 text-sm font-medium text-gray-300">{t('project_name')}</label>
-                                <Input type="text" placeholder="e.g., My Awesome App" value={name} onChange={(e) => setName(e.target.value)} required />
-                            </div>
-                            <div>
-                                <label className="block mb-2 text-sm font-medium text-gray-300">{t('website_url')}</label>
-                                <Input type="url" placeholder="https://example.com" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} required />
-                            </div>
-                            <div>
-                                <label className="block mb-2 text-sm font-medium text-gray-300">{t('target_platform')}</label>
-                                <select
-                                    value={appType}
-                                    onChange={(e) => setAppType(e.target.value)}
-                                    className="w-full bg-gray-700 bg-opacity-30 text-soft-white p-3 rounded-lg focus:border-ion-blue focus:ring-0 focus:outline-none"
-                                >
-                                    <option value="ANDROID">Android</option>
-                                    <option value="IOS">iOS</option>
-                                    <option value="BOTH">Both (Android & iOS)</option>
-                                </select>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div>
-                                <label className="block mb-2 text-sm font-medium text-gray-300">Describe your app in plain English</label>
-                                <textarea
-                                    value={initialPrompt}
-                                    onChange={(e) => setInitialPrompt(e.target.value)}
-                                    placeholder="e.g., 'Build me a mobile app for my e-commerce store that sells vintage clothing...'"
-                                    className="w-full h-40 bg-gray-700 bg-opacity-30 text-soft-white p-3 rounded-lg focus:border-ion-blue focus:ring-0 focus:outline-none"
-                                    required
-                                ></textarea>
-                            </div>
-                             <div>
-                                <label className="block mb-2 text-sm font-medium text-gray-300">Upload a requirements document (optional)</label>
-                                <Input type="file" onChange={handleFileChange} icon={<FileText size={18} />} />
-                            </div>
-                        </>
-                    )}
-
+    const renderFormContent = () => {
+        if (createMode === 'url') {
+            return (
+                <div className="space-y-4 animate-fade-in">
                     <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-300">App Languages</label>
-                        <div className="relative">
-                            <button type="button" onClick={() => setLangDropdownOpen(!isLangDropdownOpen)} className="w-full bg-gray-700 bg-opacity-30 text-soft-white p-3 rounded-lg flex justify-between items-center">
-                                <span>{supportedLanguages.length > 0 ? `${supportedLanguages.length} language(s) selected` : "Select Languages"}</span>
-                                <ChevronDown size={20} />
-                            </button>
-                            {isLangDropdownOpen && (
-                                <div className="absolute z-10 w-full mt-1 bg-gray-800 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {allLanguages.map(lang => (
-                                        <label key={lang.code} className="flex items-center px-4 py-2 hover:bg-ion-blue hover:text-black cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={supportedLanguages.includes(lang.code)}
-                                                onChange={() => handleLanguageToggle(lang.code)}
-                                                className="form-checkbox h-5 w-5 text-fusion-pink bg-gray-700 border-gray-600 rounded focus:ring-fusion-pink"
-                                            />
-                                            <span className="ml-3 text-soft-white">{lang.name}</span>
-                                        </label>
-                                    ))}
+                        <label htmlFor="sourceUrl" className="block text-sm font-medium text-gray-300 mb-1">
+                            Source URL
+                        </label>
+                        <input
+                            type="url"
+                            id="sourceUrl"
+                            value={sourceUrl}
+                            onChange={(e) => setSourceUrl(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-ion-blue"
+                            placeholder="https://github.com/example/repo"
+                            required
+                        />
+                    </div>
+                </div>
+            );
+        }
+
+        if (createMode === 'zero-touch') {
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div>
+                        <label htmlFor="initialPrompt" className="block text-sm font-medium text-gray-300 mb-1">
+                            Initial Prompt
+                        </label>
+                        <textarea
+                            id="initialPrompt"
+                            value={initialPrompt}
+                            onChange={(e) => setInitialPrompt(e.target.value)}
+                            rows={5}
+                            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-ion-blue"
+                            placeholder="Describe your app idea. What problem does it solve? Who is it for? What are the key features?"
+                        />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                           Or Upload a Requirements Document
+                        </label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-700 border-dashed rounded-md">
+                            <div className="space-y-1 text-center">
+                                <FileText className="mx-auto h-12 w-12 text-gray-500" />
+                                <div className="flex text-sm text-gray-400">
+                                    <label
+                                        htmlFor="file-upload"
+                                        className="relative cursor-pointer bg-gray-900 rounded-md font-medium text-ion-blue hover:text-ion-blue-hover focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-gray-900 focus-within:ring-ion-blue"
+                                    >
+                                        <span>Upload a file</span>
+                                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.doc,.docx,.txt" />
+                                    </label>
+                                    <p className="pl-1">or drag and drop</p>
                                 </div>
-                            )}
+                                <p className="text-xs text-gray-500">PDF, DOC, DOCX, TXT up to 10MB</p>
+                                {requirementsDocument && <p className="text-sm text-green-400 mt-2">{requirementsDocument.name}</p>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    if (!authContext?.isAuthenticated) {
+        return (
+            <div className="text-center p-10">
+                <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+                <p className="text-solar-orange">Please log in to create a project.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-black flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+                <Card className="p-8">
+                    <h1 className="text-3xl font-bold text-center text-white mb-2">Create a New Project</h1>
+                    <p className="text-center text-gray-400 mb-8">Let's build something extraordinary. Choose your creation method.</p>
+
+                    <div className="mb-6">
+                        <div className="flex border-b border-gray-700">
+                            <button
+                                onClick={() => setCreateMode('url')}
+                                className={`flex-1 py-3 text-sm font-medium transition-colors ${createMode === 'url' ? 'text-ion-blue border-b-2 border-ion-blue' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <LinkIcon className="inline-block w-5 h-5 mr-2" />
+                                Clone from URL
+                            </button>
+                            <button
+                                onClick={() => setCreateMode('zero-touch')}
+                                className={`flex-1 py-3 text-sm font-medium transition-colors ${createMode === 'zero-touch' ? 'text-ion-blue border-b-2 border-ion-blue' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <UploadCloud className="inline-block w-5 h-5 mr-2" />
+                                Zero-Touch
+                            </button>
                         </div>
                     </div>
 
-                    {error && <p className="text-solar-orange text-sm">{error}</p>}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {error && (
+                             <Alert variant="destructive">
+                                <AlertTitle>Creation Failed</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
 
-                    <button type="submit" disabled={loading} className="w-full bg-fusion-pink text-white font-bold py-3 rounded-lg hover:bg-opacity-90 transition-all duration-300 disabled:bg-opacity-50">
-                        {loading ? 'Analyzing...' : t('start_analysis')}
-                    </button>
-                </form>
-            </Card>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="projectName" className="block text-sm font-medium text-gray-300 mb-1">
+                                    Project Name
+                                </label>
+                                <input
+                                    type="text"
+                                    id="projectName"
+                                    value={projectName}
+                                    onChange={(e) => setProjectName(e.target.value)}
+                                    className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-ion-blue"
+                                    placeholder="My Awesome App"
+                                    required
+                                />
+                            </div>
+                           
+                            {renderFormContent()}
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Target Platform</label>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {(['ANDROID', 'IOS', 'BOTH'] as AppType[]).map(type => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setAppType(type)}
+                                            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
+                                                appType === type
+                                                    ? 'bg-ion-blue text-black ring-2 ring-ion-blue'
+                                                    : 'bg-gray-800 text-white hover:bg-gray-700'
+                                            }`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="animate-spin" />
+                                    <span>Creating Project...</span>
+                                </>
+                            ) : (
+                                'Start Building'
+                            )}
+                        </button>
+                    </form>
+                </Card>
+            </div>
         </div>
     );
 };
