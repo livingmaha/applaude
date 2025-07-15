@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../services/api';
 import Card from '../components/ui/Card';
-import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Download, Upload, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Download, Upload, SlidersHorizontal, ChevronDown, Github } from 'lucide-react';
 import AppSimulator from '../components/core/AppSimulator';
 import { AuthContext } from '../contexts/AuthContext';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
@@ -74,6 +74,8 @@ const ProjectDetailPage = () => {
         throw new Error("ProjectDetailPage must be used within an AuthProvider");
     }
     const { openPaymentConversation } = authContext;
+    const [isPushingToGithub, setIsPushingToGithub] = useState(false);
+    const [githubError, setGithubError] = useState('');
 
     useEffect(() => {
         const fetchProjectData = async () => {
@@ -135,6 +137,21 @@ const ProjectDetailPage = () => {
             return <XCircle size={18} className="inline-block ml-2 text-red-500" />;
         }
         return null;
+    };
+
+    const handlePushToGithub = async () => {
+        if (!project) return;
+        setIsPushingToGithub(true);
+        setGithubError('');
+
+        try {
+            const response = await apiClient.post(`/projects/${project.id}/push-to-github/`);
+            alert(`Successfully pushed to GitHub! Repo URL: ${response.data.repo_url}`);
+        } catch (err: any) {
+            setGithubError(err.response?.data?.error || 'Failed to push to GitHub.');
+        } finally {
+            setIsPushingToGithub(false);
+        }
     };
 
     const handleDownloadCode = async () => {
@@ -217,7 +234,6 @@ const ProjectDetailPage = () => {
                     )}
                 </div>
 
-                {/* Right Column (Simulator and Actions) */}
                 <div className="lg:col-span-1 space-y-8">
                     <Card className="p-4 sticky top-8">
                         <h2 className="text-2xl font-bold mb-4 text-center">App Simulator</h2>
@@ -280,6 +296,14 @@ const ProjectDetailPage = () => {
                                 >
                                 <Download size={20} /> Download Code
                             </button>
+                            <button
+                                onClick={handlePushToGithub}
+                                disabled={!isGenerationComplete || isPushingToGithub}
+                                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-gray-800 text-white font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                                <Github size={20} /> {isPushingToGithub ? 'Pushing...' : 'Push to GitHub'}
+                            </button>
+                            {githubError && <p className="text-solar-orange text-sm text-center">{githubError}</p>}
                         </div>
                     </Card>
                 </div>
