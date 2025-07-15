@@ -14,7 +14,9 @@ class ProjectSerializer(serializers.ModelSerializer):
             'status_message', 'created_at', 'updated_at', 
             'owner_email', 'user_persona_document', 'brand_palette',
             'enable_ux_survey', 'ux_survey_questions', 'enable_pmf_survey',
-            'pmf_survey_questions', 'deployment_platform'
+            'pmf_survey_questions', 'deployment_platform',
+            # **MODIFIED: Add new fields for "Zero-Touch" UI**
+            'initial_prompt', 'requirements_document'
         ]
         read_only_fields = [
             'status', 'status_message', 'created_at', 'updated_at', 'owner_email', 'user_persona_document', 'brand_palette',
