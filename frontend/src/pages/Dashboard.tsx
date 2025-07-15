@@ -24,7 +24,7 @@ const Dashboard = () => {
     const [error, setError] = useState('');
 
     if (!authContext) throw new Error("Dashboard must be within an AuthProvider");
-    const { user, logout } = authContext;
+    const { user, logout, openPaymentConversation } = authContext;
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -58,9 +58,7 @@ const Dashboard = () => {
     `;
     
     const handleRequestMaintenance = (projectId: number) => {
-        // Open the Applause Prime chat modal
-        // This will be implemented in a future sprint
-        alert(`Requesting maintenance for project ${projectId}`);
+        openPaymentConversation(projectId);
     };
 
     return (
