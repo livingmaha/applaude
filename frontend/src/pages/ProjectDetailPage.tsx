@@ -1,17 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
-// MODIFICATION: Added useSearchParams and useNavigate from react-router-dom
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../services/api';
 import Card from '../components/ui/Card';
-import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Download, Upload, SlidersHorizontal } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, BarChart2, MessageSquareText, Download, Upload, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import AppSimulator from '../components/core/AppSimulator';
 import { AuthContext } from '../contexts/AuthContext';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Switch } from '../components/ui/Switch';
 
-interface ProjectDetails {
+interface Project {
     id: number;
     name: string;
+}
+
+interface ProjectDetails extends Project {
     status: string;
     source_url: string;
     app_type: string;
@@ -31,16 +33,41 @@ interface ProjectDetails {
     survey_response_analytics?: any;
 }
 
+const ProjectSelector: React.FC<{ currentProjectId: string; userProjects: Project[] }> = ({ currentProjectId, userProjects }) => {
+    const navigate = useNavigate();
+
+    const handleProjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newProjectId = event.target.value;
+        navigate(`/projects/${newProjectId}`);
+    };
+
+    return (
+        <div className="relative">
+            <select
+                value={currentProjectId}
+                onChange={handleProjectChange}
+                className="appearance-none p-2 pr-8 border border-gray-300 rounded-md bg-white text-black font-bold focus:outline-none focus:ring-2 focus:ring-ion-blue"
+            >
+                {userProjects.map(project => (
+                    <option key={project.id} value={project.id}>
+                        {project.name}
+                    </option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-black pointer-events-none" />
+        </div>
+    );
+};
+
 const ProjectDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const [project, setProject] = useState<ProjectDetails | null>(null);
+    const [allProjects, setAllProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     
-    // MODIFICATION: Added hooks to read URL and navigate
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-
 
     const authContext = useContext(AuthContext);
     if (!authContext) {
@@ -48,27 +75,39 @@ const ProjectDetailPage = () => {
     }
     const { openPaymentConversation } = authContext;
 
-    const fetchProject = async () => {
-        if (!id) return;
-        try {
-            const response = await apiClient.get(`/projects/${id}/`);
-            setProject(response.data);
-        } catch (err) {
-            setError('Failed to fetch project details.');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
-        // MODIFICATION: This effect checks for the 'payment=success' URL parameter.
-        // If found, it redirects the user to their dashboard.
+        const fetchProjectData = async () => {
+            if (!id) return;
+            setLoading(true);
+            try {
+                // Fetch details for the current project
+                const projectDetailsPromise = apiClient.get(`/projects/${id}/`);
+                // Fetch the list of all projects for the dropdown
+                const allProjectsPromise = apiClient.get('/projects/');
+
+                const [detailsResponse, projectsResponse] = await Promise.all([projectDetailsPromise, allProjectsPromise]);
+
+                setProject(detailsResponse.data);
+                setAllProjects(projectsResponse.data);
+
+            } catch (err) {
+                setError('Failed to fetch project details.');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (searchParams.get('payment') === 'success') {
             navigate('/dashboard', { replace: true });
         } else {
-            fetchProject();
-            const interval = setInterval(fetchProject, 5000); // Poll every 5 seconds
+            fetchProjectData();
+            const interval = setInterval(() => {
+                // Only poll the current project details, not the full list
+                if (id) {
+                    apiClient.get(`/projects/${id}/`).then(res => setProject(res.data)).catch(console.error);
+                }
+            }, 5000); 
             return () => clearInterval(interval);
         }
     }, [id, searchParams, navigate]);
@@ -102,7 +141,7 @@ const ProjectDetailPage = () => {
         if (!project) return;
         try {
             const response = await apiClient.get(`/projects/${project.id}/download-code/`, {
-                responseType: 'blob', // Important for file downloads
+                responseType: 'blob',
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -117,23 +156,29 @@ const ProjectDetailPage = () => {
         }
     };
 
-    if (loading) return <div className="text-center p-10 text-soft-white">Loading Project...</div>;
+    if (loading) return <div className="text-center p-10 text-white">Loading Project...</div>;
     if (error) return <div className="text-center p-10 text-solar-orange">{error}</div>;
-    if (!project) return <div className="text-center p-10 text-soft-white">Project not found.</div>;
+    if (!project) return <div className="text-center p-10 text-white">Project not found.</div>;
 
     const isGenerationComplete = project.status.includes('COMPLETE');
     const chartData = project.app_ratings_summary ? Object.keys(project.app_ratings_summary).map(key => ({ name: `${key} Stars`, value: project.app_ratings_summary[key] })) : [];
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
 
     return (
-        <div className="min-h-screen bg-quantum-black text-soft-white p-4 md:p-8">
-            <Link to="/dashboard" className="text-ion-blue hover:underline mb-8 block animate-fade-in">&larr; Back to Dashboard</Link>
+        <div className="min-h-screen bg-black text-white p-4 md:p-8">
+            <Link to="/dashboard" className="text-ion-blue hover:underline mb-4 block animate-fade-in">&larr; Back to Dashboard</Link>
+            
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-bold animate-slide-in-right">{project.name}</h1>
+                {allProjects.length > 1 && id && (
+                    <ProjectSelector currentProjectId={id} userProjects={allProjects} />
+                )}
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column */}
                 <div className="lg:col-span-2 space-y-8">
                     <div>
-                        <h1 className="text-4xl font-bold mb-2 animate-slide-in-right">{project.name}</h1>
                         <p className="text-lg text-gray-400 mb-4">
                             Status: <span className="font-semibold text-solar-orange">
                                 {project.status_message || project.status}
@@ -224,12 +269,12 @@ const ProjectDetailPage = () => {
                             <button
                                 onClick={() => openPaymentConversation(project.id)}
                                 disabled={!isGenerationComplete}
-                                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-ion-blue text-white font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-ion-blue text-black font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
                             >
                                 <Upload size={20} /> Deploy to App Store
                             </button>
                             <button
-                                onClick={handleDownloadCode} // Changed from alert
+                                onClick={handleDownloadCode}
                                 disabled={!isGenerationComplete}
                                 className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
                                 >
