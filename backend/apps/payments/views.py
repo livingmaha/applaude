@@ -1,5 +1,3 @@
-# backend/apps/payments/views.py
-
 import os
 import requests
 import hmac
