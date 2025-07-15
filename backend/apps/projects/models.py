@@ -57,12 +57,21 @@ class Project(models.Model):
     survey_response_analytics = models.JSONField(default=dict)
     deployment_platform = models.CharField(max_length=50, blank=True, null=True)
 
+    class LastCompletedStep(models.TextChoices):
+        CREATED = 'CREATED', _('Created')
+        PAID = 'PAID', _('Paid')
+        DEPLOYED = 'DEPLOYED', _('Deployed')
+
+    last_completed_step = models.CharField(
+        max_length=20,
+        choices=LastCompletedStep.choices,
+        default=LastCompletedStep.CREATED
+    )
 
     def __str__(self):
         return f"{self.name} by {self.owner.username}"
 
     class Meta:
         ordering = ['-created_at']
-
 
   
