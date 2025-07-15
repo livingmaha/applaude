@@ -9,17 +9,13 @@ interface CardProps {
 const Card: React.FC<CardProps> = ({ children, className, onClick }) => {
   return (
     <div
-      className={`bg-black bg-opacity-20 backdrop-blur-xl rounded-2xl shadow-2xl border border-white border-opacity-10 
+      className={`bg-white rounded-2xl shadow-lg border border-gray-200 
                   relative overflow-hidden group transition-all duration-300 ease-in-out 
-                  hover:scale-[1.01] hover:shadow-2xl hover:border-transparent 
+                  hover:shadow-2xl hover:border-black
                   ${className || ''}`}
       onClick={onClick}
     >
-      {/* Animated gradient border */}
-      <div className="absolute inset-0 rounded-2xl p-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="h-full w-full rounded-[1.25rem] bg-gradient-to-r from-ion-blue to-fusion-pink animate-pulse-glow" />
-      </div>
-      <div className="relative z-10 p-6 h-full w-full"> {/* Ensure content is on top */}
+      <div className="relative z-10 p-6 h-full w-full">
         {children}
       </div>
     </div>
