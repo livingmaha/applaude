@@ -37,13 +37,22 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
+
 interface AuthProviderProps {
     children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
-    const [user, setUser] = useState<{ email: string; userId: number; username?: string } | null>(null);
+    const [token, setToken] = useState<string | null>(null);
+    const [user, setUser] = useState<{ email: string; userId: number; username?: string, is_superuser?: boolean, is_premium_subscribed?: boolean } | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
@@ -75,14 +84,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     useEffect(() => {
         const storedToken = localStorage.getItem('token');
-        setupAuth(storedToken);
+        if (storedToken) {
+            apiClient.defaults.headers.common['Authorization'] = `Token ${storedToken}`;
+            apiClient.get('/users/me/')
+                .then(response => {
+                    const { email, id, username, is_superuser, is_premium_subscribed } = response.data;
+                    const userData = { email, userId: id, username, is_superuser, is_premium_subscribed };
+                    setUser(userData);
+                    setToken(storedToken);
+                    setIsAuthenticated(true);
+                })
+                .catch(() => {
+                    // Token is invalid, clear it
+                    localStorage.removeItem('token');
+                    setIsAuthenticated(false);
+                });
+        }
     }, []);
 
     const login = async (email: string, password: string) => {
         const response = await apiClient.post('/users/token/', { email, password });
-        const { token: responseToken } = response.data;
+        const { token: responseToken, user_id, username, is_premium_subscribed } = response.data;
         localStorage.setItem('token', responseToken);
-        setupAuth(responseToken);
+        apiClient.defaults.headers.common['Authorization'] = `Token ${responseToken}`;
+        setUser({ email, userId: user_id, username, is_premium_subscribed });
+        setToken(responseToken);
+        setIsAuthenticated(true);
     };
 
     const signup = async (username: string, email: string, password: string) => {
