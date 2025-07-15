@@ -234,6 +234,7 @@ const ProjectDetailPage = () => {
                     )}
                 </div>
 
+                {/* Right Column */}
                 <div className="lg:col-span-1 space-y-8">
                     <Card className="p-4 sticky top-8">
                         <h2 className="text-2xl font-bold mb-4 text-center">App Simulator</h2>
