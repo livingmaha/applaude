@@ -1,3 +1,5 @@
+# backend/apps/payments/views.py
+
 import os
 import requests
 import hmac
@@ -13,10 +15,9 @@ from rest_framework.response import Response
 from apps.projects.models import Project
 from apps.users.models import CustomUser
 from .models import Payment
-from agents.tasks import run_code_generation
+from agents.tasks import run_code_generation, run_qa_check, run_deployment
 from apps.api.models import ApiClient
-from agents.tasks import run_code_generation, run_qa_check, run_deployment # Add new tasks
-from celery import chain 
+from celery import chain
 
 # Base prices in USD
 BASE_PLAN_PRICES_USD = {
@@ -88,8 +89,14 @@ class InitializePaymentView(APIView):
         project.save()
 
         if request.user.is_superuser:
-            run_code_generation.delay(project.id)
-            return Response({'message': 'Superuser access granted. Code generation initiated.'}, status=status.HTTP_200_OK)
+            # For superuser, trigger the full pipeline directly
+            full_pipeline = chain(
+                run_code_generation.s(project.id),
+                run_qa_check.s(),
+                run_deployment.s()
+            )
+            full_pipeline.delay()
+            return Response({'message': 'Superuser access granted. Full AI pipeline initiated.'}, status=status.HTTP_200_OK)
 
         # Calculate amount based on currency
         if currency != 'USD' and currency in [c['currency'] for c in COUNTRY_CURRENCY_CONVERSION.values()]:
@@ -191,10 +198,11 @@ class PaystackWebhookView(APIView):
                                 user.save(update_fields=['is_premium_subscribed'])
 
                             if not payment.project.status.startswith('COMPLETE'):
+                                # **MODIFIED: Trigger the full, chained pipeline**
                                 full_pipeline = chain(
                                     run_code_generation.s(payment.project.id),
-                                    run_qa_check.s(payment.project.id),
-                                    run_deployment.s(payment.project.id)
+                                    run_qa_check.s(),
+                                    run_deployment.s()
                                 )
                                 full_pipeline.delay()
                     except Payment.DoesNotExist:
