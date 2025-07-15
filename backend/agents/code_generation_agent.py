@@ -16,7 +16,7 @@ class CodeGenAgent(BaseAgent):
             agent_persona=CODE_GEN_PERSONA,
             goal=CODE_GEN_GOAL
         )
-        self.model = genai.GenerativeModel('gemini-1.5-pro') # Using a more capable model for prompt engineering
+        self.model = genai.GenerativeModel('gemini-2.5-pro')
 
     def execute(self, project_id: int):
         """
