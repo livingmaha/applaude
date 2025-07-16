@@ -1,3 +1,4 @@
+import uuid
 import secrets
 from django.db import models
 from django.conf import settings
@@ -8,29 +9,29 @@ def generate_api_key():
     """
     return secrets.token_hex(32)
 
-class ApiClient(models.Model):
+class APIKey(models.Model):
     """
-    Stores information about API partners and their usage.
+    Represents a unique API key for a user to access Applaude services programmatically.
     """
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='api_client'
-    )
-    business_name = models.CharField(max_length=255)
-    website_link = models.URLField(max_length=500)
-    api_key = models.CharField(
-        max_length=64,
-        unique=True,
-        default=generate_api_key
-    )
-    is_active = models.BooleanField(
-        default=False,
-        help_text="Active status is set to True after successful payment."
-    )
-    apps_created_count = models.IntegerField(default=0)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='api_keys')
+    key = models.CharField(max_length=40, unique=True, editable=False)
+    name = models.CharField(max_length=100, help_text="A descriptive name for the API key, e.g., 'My Production Server'.")
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        super().save(*args, **kwargs)
+
+    def generate_key(self):
+        return uuid.uuid4().hex
 
     def __str__(self):
-        return f"{self.business_name} - {self.user.email}"
+        return f"API Key for {self.user.email} | Name: {self.name}"
+
+    class Meta:
+        verbose_name = "API Key"
+        verbose_name_plural = "API Keys"
+        ordering = ['-created_at']
+
