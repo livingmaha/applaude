@@ -17,7 +17,7 @@ const BlogPostPage = () => {
                 const response = await apiClient.get(`/blog/${id}/`);
                 setPost(response.data);
             } catch (err) {
-                setError('Blog post not found or an error occurred.');
+                setError('Blog post not found.');
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -30,21 +30,21 @@ const BlogPostPage = () => {
     }, [id]);
 
     if (loading) {
-        return <div className="min-h-screen bg-quantum-black flex items-center justify-center text-soft-white">Loading post...</div>;
+        return <div className="min-h-screen bg-white flex items-center justify-center">Loading post...</div>;
     }
 
     if (error || !post) {
-        return <div className="min-h-screen bg-quantum-black flex items-center justify-center text-solar-orange">{error}</div>;
+        return <div className="min-h-screen bg-white flex items-center justify-center text-red-500">{error}</div>;
     }
 
     return (
-        <div className="min-h-screen bg-quantum-black text-soft-white">
+        <div className="min-h-screen bg-white text-black">
             <Header />
             <main className="py-24 px-4 sm:px-6 lg:px-8">
                 <article className="max-w-4xl mx-auto">
                     <Link to="/blog" className="text-ion-blue hover:underline mb-8 inline-block">&larr; Back to Blog</Link>
-                    <h1 className="text-4xl md:text-6xl font-bold text-soft-white mb-4">{post.title}</h1>
-                    <div className="text-gray-400 mb-8">
+                    <h1 className="text-4xl md:text-6xl font-bold text-black mb-4">{post.title}</h1>
+                    <div className="text-gray-500 mb-8">
                         <span>By {post.author?.username || 'Applause Team'}</span>
                         <span className="mx-2">&bull;</span>
                         <span>{new Date(post.created_at).toLocaleDateString()}</span>
@@ -52,7 +52,7 @@ const BlogPostPage = () => {
                     {post.main_image_url && (
                         <img src={post.main_image_url} alt={post.title} className="w-full h-auto max-h-96 object-cover rounded-lg mb-8" />
                     )}
-                    <div className="prose prose-invert prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, '<br />') }} />
+                    <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, '<br />') }} />
                 </article>
             </main>
             <Footer />
