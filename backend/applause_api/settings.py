@@ -57,7 +57,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'applause_api.urls'
+ROOT_URLCONF = 'applaude_api.urls'
 
 TEMPLATES = [
     {
@@ -75,7 +75,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'applause_api.wsgi.application'
+WSGI_APPLICATION = 'applaude_api.wsgi.application'
 
 
 # Database
