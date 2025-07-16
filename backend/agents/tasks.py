@@ -5,8 +5,11 @@ from apps.projects.models import Project
 from django.db import transaction
 import time
 import random
+from django.utils import timezone
+from datetime import timedelta
+from django.core.mail import send_mail
 
-# Configure the generative AI API key
+
 try:
     genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
     model = genai.GenerativeModel('gemini-1.5-pro-latest')
@@ -184,6 +187,76 @@ def run_deployment(self, project_id):
         update_project_status(project_id, Project.ProjectStatus.FAILED, f"Deployment Failed: {e}")
         self.retry(exc=e)
 
+@shared_task(name="send_testimonial_requests")
+def send_testimonial_requests():
+    """
+    A periodic Celery task that identifies users who are good candidates
+    for providing a testimonial and sends them a request.
+    """
+    now = timezone.now()
+    
+    # Define time windows for sending requests
+    one_day_ago = now - timedelta(days=1)
+    one_month_ago = now - timedelta(days=30)
+    three_months_ago = now - timedelta(days=90)
+
+    # Find projects that were completed recently
+    # We check for a small window to avoid sending emails every day for the same project
+    completed_recently = Project.objects.filter(
+        status=Project.ProjectStatus.COMPLETED,
+        updated_at__range=(one_day_ago - timedelta(hours=24), one_day_ago)
+    )
+    
+    completed_one_month_ago = Project.objects.filter(
+        status=Project.ProjectStatus.COMPLETED,
+        updated_at__range=(one_month_ago - timedelta(hours=24), one_month_ago)
+    )
+
+    completed_three_months_ago = Project.objects.filter(
+        status=Project.ProjectStatus.COMPLETED,
+        updated_at__range=(three_months_ago - timedelta(hours=24), three_months_ago)
+    )
+    
+    projects_to_notify = list(completed_recently) + list(completed_one_month_ago) + list(completed_three_months_ago)
+
+    for project in projects_to_notify:
+        user = project.owner
+        # You would ideally check if a testimonial already exists for this project/user
+        # from apps.testimonials.models import Testimonial
+        # if not Testimonial.objects.filter(user=user, project=project).exists():
+
+        # For this implementation, we'll assume sending the email is sufficient.
+        
+        subject = f"Share Your Experience with {project.name}"
+        message = f"""
+        Hi {user.username},
+
+        We hope you're enjoying your app, "{project.name}"!
+
+        Your feedback is incredibly valuable to us and to the Applause community. Would you be willing to share a short testimonial about your experience building with us?
+
+        It will only take a moment, and you can submit it directly here:
+        http://localhost:5173/submit-testimonial/{project.id}
+
+        Thank you for being a part of the Applause journey!
+
+        Best,
+        The Applause Team
+        """
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                'noreply@applaude.ai',
+                [user.email],
+                fail_silently=False,
+            )
+            print(f"Sent testimonial request to {user.email} for project {project.name}")
+        except Exception as e:
+            print(f"Failed to send testimonial request email to {user.email}: {e}")
+
+
 # --- Cleanup ---
 
 @atexit.register
@@ -192,3 +265,5 @@ def cleanup_resources(*args, **kwargs):
     A cleanup function to be executed when the Celery worker shuts down.
     """
     print("Celery worker is shutting down. Performing cleanup...")
+
+
