@@ -1,11 +1,10 @@
-# File: /backend/agents/base_agent.py
 import google.generativeai as genai
 import os
 from abc import ABC, abstractmethod
 
 class BaseAgent(ABC):
     """
-    Abstract Base Class for all AI Agents in the Applause platform.
+    Abstract Base Class for all AI Agents in the Applaude platform.
     """
     def __init__(self, agent_name: str, agent_persona: str, goal: str):
         """
