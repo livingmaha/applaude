@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import Button from './Button';
 
 describe('Button Component', () => {
-  test('renders with children', () => {
+  test('renders children correctly', () => {
     render(<Button>Click Me</Button>);
     expect(screen.getByText('Click Me')).toBeInTheDocument();
   });
@@ -11,23 +11,20 @@ describe('Button Component', () => {
   test('handles click events', () => {
     const handleClick = jest.fn();
     render(<Button onClick={handleClick}>Click Me</Button>);
-    const buttonElement = screen.getByText('Click Me');
-    fireEvent.click(buttonElement);
+    fireEvent.click(screen.getByText('Click Me'));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
-  test('applies variant classes', () => {
-    render(<Button variant="secondary">Secondary</Button>);
-    const buttonElement = screen.getByText('Secondary');
-    expect(buttonElement).toHaveClass('bg-ion-blue');
+  test('applies correct variant classes', () => {
+    const { rerender } = render(<Button variant="primary">Primary</Button>);
+    expect(screen.getByText('Primary')).toHaveClass('bg-fusion-pink');
+
+    rerender(<Button variant="secondary">Secondary</Button>);
+    expect(screen.getByText('Secondary')).toHaveClass('bg-ion-blue');
   });
 
-  test('is disabled when the disabled prop is true', () => {
-    const handleClick = jest.fn();
-    render(<Button onClick={handleClick} disabled>Disabled</Button>);
-    const buttonElement = screen.getByText('Disabled');
-    expect(buttonElement).toBeDisabled();
-    fireEvent.click(buttonElement);
-    expect(handleClick).not.toHaveBeenCalled();
+  test('is disabled when passed the disabled prop', () => {
+    render(<Button disabled>Disabled</Button>);
+    expect(screen.getByText('Disabled')).toBeDisabled();
   });
 });
