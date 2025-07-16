@@ -1,6 +1,6 @@
-# Applaude API: AI-Powered Mobile App Generation Platform
+# Applaude: AI-Powered Mobile App Generation
 
-Applaude is a revolutionary platform that uses a swarm of specialized AI agents to build native mobile applications from a simple website URL or a text prompt. This repository contains the complete codebase for the Applaude project, including the Django backend and the React frontend.
+Applaude is a revolutionary platform that uses a swarm of specialized AI agents to build native mobile applications from a simple website URL or a text prompt.
 
 ## Tech Stack
 
@@ -11,125 +11,45 @@ Applaude is a revolutionary platform that uses a swarm of specialized AI agents 
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-* Python 3.11+
-* Node.js 18+
-* PostgreSQL
-* Redis
-* An active Paystack account for payment processing
-
-### Backend Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/your-repo/applaude.git](https://github.com/your-repo/applaude.git)
-    cd applaude/backend
-    ```
-
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
-
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4.  **Set up environment variables:**
-    Create a `.env` file in the `backend/` directory and add the following variables. Use the `.env.example` file as a template.
-    ```env
-    SECRET_KEY='your-strong-secret-key'
-    DEBUG=True
-    DATABASE_URL='postgres://user:password@localhost:5432/applaude_db'
-    CORS_ALLOWED_ORIGINS='http://localhost:5173'
-    PAYSTACK_SECRET_KEY='sk_your_paystack_secret_key'
-    CELERY_BROKER_URL='redis://localhost:6379/0'
-    CELERY_RESULT_BACKEND='redis://localhost:6379/0'
-    ```
-
-5.  **Run database migrations:**
-    ```bash
-    python manage.py makemigrations
-    python manage.py migrate
-    ```
-
-6.  **Run the development server:**
-    ```bash
-    python manage.py runserver
-    ```
-
-7.  **Run the Celery worker (in a separate terminal):**
-    ```bash
-    celery -A applaude_api worker -l info
-    ```
-
-### Frontend Setup
-
-1.  **Navigate to the frontend directory:**
-    ```bash
-    cd ../frontend
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-    The frontend will be available at `http://localhost:5173`.
-
----
-
-## Deployment
+## Deployment Instructions
 
 ### Frontend (Vercel)
 
-1.  Push your code to a GitHub repository.
-2.  Go to [Vercel](https://vercel.com) and create a new project, linking it to your GitHub repository.
-3.  Vercel will automatically detect the Vite configuration from the `vercel.json` file.
-4.  Add your environment variables (e.g., `VITE_API_BASE_URL`) in the Vercel project settings.
-5.  Deploy. Vercel will handle the build and deployment process.
+1.  **Fork and Clone:** Fork this repository and clone it to your local machine.
+2.  **Vercel Project:** Go to [Vercel](https://vercel.com), create a new project, and link it to your forked GitHub repository.
+3.  **Configuration:** Vercel will automatically detect the Vite project. No special build command is needed.
+4.  **Environment Variables:** In the Vercel project settings, add your backend API URL as `VITE_API_URL`.
+5.  **Deploy:** Vercel will automatically deploy new changes pushed to the `main` branch.
 
-### Backend (AWS Elastic Beanstalk)
+### Backend & Database (AWS)
 
-1.  **Create an AWS RDS for PostgreSQL instance:**
-    * Launch a new PostgreSQL database in AWS RDS.
-    * Configure the security group to allow inbound connections from your Elastic Beanstalk environment.
-    * Note the database credentials (host, name, user, password).
+#### 1. AWS RDS for PostgreSQL
 
-2.  **Create a `.ebextensions/django.config` file** in the `backend` directory to configure the WSGI path:
+* In the AWS console, navigate to **RDS** and create a new **PostgreSQL** database.
+* Choose the "Free tier" template for development.
+* Set a master username and password.
+* **Crucially**, in the "Connectivity" section, make sure "Public access" is set to "Yes".
+* Once created, find the **endpoint** and **port** from the database details page.
+
+#### 2. AWS Elastic Beanstalk Deployment
+
+* **Create `.ebextensions/django.config`:** In your `backend` directory, create a folder named `.ebextensions` and add a file `django.config` with the following content:
     ```yaml
     option_settings:
       aws:elasticbeanstalk:container:python:
         WSGIPath: applaude_api.wsgi:application
     ```
+* **Install EB CLI:** Follow the official AWS instructions to install the Elastic Beanstalk CLI.
+* **Initialize EB Project:**
+    * Navigate to your `backend` directory.
+    * Run `eb init -p python-3.11 applaude-backend`.
+    * Choose a region. You do not need to set up SSH.
+* **Create Environment:**
+    * Run `eb create applaude-prod-env`. This will take several minutes.
+* **Set Environment Variables:**
+    * Run `eb setenv SECRET_KEY='your-very-secret-key' DEBUG=False ALLOWED_HOSTS='.elasticbeanstalk.com,your-vercel-domain.app' DATABASE_URL='postgres://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME' PAYSTACK_SECRET_KEY='your-paystack-secret-key' GEMINI_API_KEY='your-gemini-key' CELERY_BROKER_URL='your-redis-url' CELERY_RESULT_BACKEND='your-redis-url'`
+    * Replace the placeholder values with your actual credentials from RDS and other services.
+* **Deploy:**
+    * Run `eb deploy`.
 
-3.  **Create a `requirements.txt` file:**
-    This should already be present. Ensure it's up to date.
-    ```bash
-    pip freeze > requirements.txt
-    ```
-
-4.  **Package the application:**
-    Zip the contents of the `backend` directory (excluding `venv` and other local artifacts).
-
-5.  **Create an Elastic Beanstalk Application and Environment:**
-    * Go to the AWS Elastic Beanstalk console and create a new application.
-    * Create a new environment with the "Python" platform.
-    * Upload your zipped application package.
-
-6.  **Configure Environment Properties:**
-    * In your environment's configuration (`Configuration` > `Software`), add the environment variables you defined in `.env` (e.g., `SECRET_KEY`, `DATABASE_URL`, `PAYSTACK_SECRET_KEY`, etc.).
-    * The `DATABASE_URL` should point to your new AWS RDS instance.
-    * Set `DEBUG` to `False`.
-    * Set `ALLOWED_HOSTS` to your Elastic Beanstalk domain name.
-
-7.  **Deploy the application.** Elastic Beanstalk will provision the resources and deploy your Django app.
+---
