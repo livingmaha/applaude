@@ -2,14 +2,18 @@ import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import logoIcon from '../assets/images/logo_icon.png';
+import odooLogo from '../assets/images/logos/odoo.png'; // Assume logo is here
+import TestimonialSlider from '../components/core/TestimonialSlider'; // Import the new slider
 import { useTranslation } from 'react-i18next';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
 
-const WordPressLogo = () => <img src="https://s.w.org/style/images/about/WordPress-logotype-wmark.png" alt="WordPress" className="h-12" />;
-const WixLogo = () => <img src="https://static.wixstatic.com/media/48a2a42b4e3349aa9910d540c49b6a03.png/v1/fill/w_240,h_60,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/48a2a42b4e3349aa9910d540c49b6a03.png" alt="Wix" className="h-12" />;
-const ShopifyLogo = () => <img src="https://cdn.shopify.com/shopify-marketing_assets/static/shopify-logo-dark.svg" alt="Shopify" className="h-12" />;
+const WordPressLogo = () => <img src="https://s.w.org/style/images/about/WordPress-logotype-wmark.png" alt="WordPress" className="h-10" />;
+const WixLogo = () => <img src="https://static.wixstatic.com/media/48a2a42b4e3349aa9910d540c49b6a03.png/v1/fill/w_240,h_60,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/48a2a42b4e3349aa9910d540c49b6a03.png" alt="Wix" className="h-10" />;
+const ShopifyLogo = () => <img src="https://cdn.shopify.com/shopify-marketing_assets/static/shopify-logo-dark.svg" alt="Shopify" className="h-10" />;
+const OdooLogo = () => <img src={odooLogo} alt="Odoo" className="h-10" />;
+
 
 const LandingPage = () => {
     const { t } = useTranslation();
@@ -46,15 +50,18 @@ const LandingPage = () => {
                 <section className="py-20">
                     <div className="max-w-6xl mx-auto px-8 text-center">
                         <h2 className="text-4xl font-bold mb-12">Seamless Integrations</h2>
-                        <div className="flex justify-center items-center space-x-12">
+                        <div className="flex justify-center items-center space-x-12 grayscale">
                             <WordPressLogo />
                             <WixLogo />
                             <ShopifyLogo />
+                            <OdooLogo />
                         </div>
                     </div>
                 </section>
 
-                <section className="py-20 bg-gray-50">
+                <TestimonialSlider /> {/* Add the new Testimonial Slider */}
+
+                <section className="py-20 bg-white">
                     <div className="max-w-6xl mx-auto px-8 text-center">
                         <h2 className="text-4xl font-bold mb-12">How It Works</h2>
                         <div className="grid md:grid-cols-3 gap-8">
