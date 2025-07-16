@@ -17,7 +17,7 @@ const AboutPage = () => {
         {
             name: 'Tsion Tamirat',
             role: 'Co-Founder & Software Engineer',
-            bio: "Tsion is a motivated and versatile Software Engineer, driven by a passion for creating impactful, user-focused applications with clean, efficient code. With a strong foundation from Arba Minch University and practical experience at NGCS, she brings a robust skill set in both backend and frontend technologies. Her expertise spans C# (.NET Core), Python (Django), and modern frontend frameworks like React, ensuring our platform is not just powerful but also responsive and intuitive. A critical thinker and natural collaborator, Tsion is committed to continuous learning and plays a vital role in shaping the technical architecture and user experience of Applause.",
+            bio: "Tsion is a motivated and versatile Software Engineer, driven by a passion for creating impactful, user-focused applications with clean, efficient code. With a strong foundation from Arba Minch University and practical experience at NGCS, she brings a robust skill set in both backend and frontend technologies. Her expertise spans C# (.NET Core), Python (Django), and modern frontend frameworks like React, ensuring our platform is not just powerful but also responsive and intuitive. A critical thinker and natural collaborator, Tsion is committed to continuous learning and plays a vital role in shaping the technical architecture and user experience of Applaude.",
             image: tsionTamirat
         }
     ]
@@ -30,12 +30,12 @@ const AboutPage = () => {
                     Empowering Your Vision
                 </h1>
                 <p className="text-xl text-center text-gray-300 mb-16">
-                    Applause is built on the belief that a great idea shouldn't be limited by technology. We are a passionate team of AI engineers and product visionaries dedicated to creating a platform that empowers you to bring your mobile app ideas to life with unprecedented speed and simplicity.
+                    Applaude is built on the belief that a great idea shouldn't be limited by technology. We are a passionate team of AI engineers and product visionaries dedicated to creating a platform that empowers you to bring your mobile app ideas to life with unprecedented speed and simplicity.
                 </p>
                 <Card className="p-8 mb-16">
                     <h2 className="text-3xl font-bold mb-4">Our Technology</h2>
                     <p className="text-gray-400">
-                        At the heart of Applause is a sophisticated swarm of AI agents, each an expert in its domain. From market analysis and brand identity to native code generation and quality assurance, our AI team works in concert to transform your vision into a polished, production-ready mobile application.
+                        At the heart of Applaude is a sophisticated swarm of AI agents, each an expert in its domain. From market analysis and brand identity to native code generation and quality assurance, our AI team works in concert to transform your vision into a polished, production-ready mobile application.
                     </p>
                 </Card>
 
