@@ -1,29 +1,44 @@
-import React from 'react';
+// File: frontend/src/pages/TermsOfServicePage.tsx
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 
 const TermsOfServicePage = () => {
     return (
-        <div className="bg-white text-black">
+        <div className="bg-white">
             <Header />
-            <main className="max-w-4xl mx-auto py-20 px-8">
-                <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
-                <div className="prose lg:prose-xl">
-                    <p>Welcome to Applause! These terms and conditions outline the rules and regulations for the use of Applause's Website, located at applause.ai.</p>
-                    <p>By accessing this website we assume you accept these terms and conditions. Do not continue to use Applause if you do not agree to take all of the terms and conditions stated on this page.</p>
-                    
-                    <h2 className="text-2xl font-bold mt-8 mb-4">Intellectual Property Rights</h2>
-                    <p>Other than the content you own, under these Terms, Applause and/or its licensors own all the intellectual property rights and materials contained in this Website. You are granted a limited license only for purposes of viewing the material contained on this Website.</p>
-                    
-                    <h2 className="text-2xl font-bold mt-8 mb-4">Restrictions</h2>
-                    <p>You are specifically restricted from all of the following:</p>
-                    <ul>
-                        <li>publishing any Website material in any other media;</li>
-                        <li>selling, sublicensing and/or otherwise commercializing any Website material;</li>
-                        <li>publicly performing and/or showing any Website material;</li>
-                        <li>using this Website in any way that is or may be damaging to this Website;</li>
-                    </ul>
-                </div>
+            <main className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8 prose lg:prose-xl">
+                <h1>Terms of Service for Applaude</h1>
+                <p><strong>Last Updated:</strong> July 16, 2025</p>
+
+                <h2>1. Agreement to Terms</h2>
+                <p>By using our Services, you agree to be bound by these Terms. If you do not agree to be bound by these Terms, do not use the Services.</p>
+
+                <h2>2. Services</h2>
+                <p>Applaude provides a platform that uses artificial intelligence to generate mobile application source code based on user-provided inputs like website URLs ("Services").</p>
+
+                <h2>3. User Accounts</h2>
+                <p>You may need to create an account to use some of our Services. You are responsible for safeguarding your account and are responsible for all activities that occur under your account.</p>
+
+                <h2>4. Intellectual Property</h2>
+                <p>You represent and warrant that you own or have the necessary rights to the content and data you provide to our Services (e.g., your website). We do not claim any ownership rights in the input you provide. The generated source code for your mobile application is your property. You are free to use, modify, and distribute it as you see fit. We retain all rights to the Applaude platform, our AI models, and the underlying technology.</p>
+
+                <h2>5. Payments and Subscriptions</h2>
+                <p>Some of our Services are offered for a fee. By signing up for a subscription, you agree to pay the specified fees. All fees are non-refundable except as required by law.</p>
+
+                <h2>6. Disclaimer of Warranties</h2>
+                <p>The Services are provided "AS IS," without warranty of any kind. We do not warrant that the generated code will be free of bugs or errors or that it will meet your specific requirements.</p>
+
+                <h2>7. Limitation of Liability</h2>
+                <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, APPLAUDE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, RESULTING FROM YOUR USE OF THE SERVICES.</p>
+
+                <h2>8. Governing Law</h2>
+                <p>These Terms shall be governed by the laws of the jurisdiction in which our company is established, without regard to its conflict of law provisions.</p>
+
+                <h2>9. Changes to Terms or Services</h2>
+                <p>We may modify the Terms at any time. If we do so, we’ll let you know either by posting the modified Terms on the site or through other communications.</p>
+
+                <h2>10. Contact Us</h2>
+                <p>If you have any questions about these Terms, please contact us at: <a href="mailto:legal@applaude.ai">legal@applaude.ai</a></p>
             </main>
             <Footer />
         </div>
