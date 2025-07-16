@@ -1,11 +1,10 @@
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from apps.tenants.models import Tena
 
 class Project(models.Model):
     """
-    Represents a single mobile app project, now tenant-aware.
+    Represents a single mobile app project.
     """
     class ProjectStatus(models.TextChoices):
         PENDING = 'PENDING', _('Pending')
@@ -29,12 +28,6 @@ class Project(models.Model):
         IOS = 'IOS', _('iOS')
         BOTH = 'BOTH', _('Both (Native)')
 
-    class DeploymentOption(models.TextChoices):
-        NOT_CHOSEN = 'NOT_CHOSEN', 'Not Chosen'
-        APPLAUSE = 'APPLAUSE', 'Applause'
-        APP_STORE = 'APP_STORE', 'App Store'
-        PLAY_STORE = 'PLAY_STORE', 'Play Store'
-
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='projects')
     source_url = models.URLField(max_length=500, blank=True, null=True)
@@ -47,42 +40,15 @@ class Project(models.Model):
     # AI-generated assets
     user_persona_document = models.TextField(blank=True, null=True)
     brand_palette = models.JSONField(default=dict)
-    generated_code_path = models.CharField(max_length=1024, blank=True, null=True) # Link to S3 or similar
+    generated_code_path = models.CharField(max_length=1024, blank=True, null=True)
     
-    # New feedback-related fields
-    enable_ux_survey = models.BooleanField(default=False)
-    ux_survey_questions = models.JSONField(default=list)
-    enable_pmf_survey = models.BooleanField(default=True)
-    pmf_survey_questions = models.JSONField(default=list)
-    app_ratings_summary = models.JSONField(default=dict)
-    survey_response_analytics = models.JSONField(default=dict)
-    deployment_platform = models.CharField(max_length=50, blank=True, null=True)
-    
-    # **MODIFIED: Add fields for "Zero-Touch" UI**
+    # Internationalization
+    supported_languages = models.JSONField(default=list)
+
+    # Zero-Touch UI fields
     initial_prompt = models.TextField(blank=True, null=True)
     requirements_document = models.FileField(upload_to='requirements_documents/', blank=True, null=True)
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='projects')
 
-
-    class LastCompletedStep(models.TextChoices):
-        CREATED = 'CREATED', _('Created')
-        PAID = 'PAID', _('Paid')
-        DEPLOYED = 'DEPLOYED', _('Deployed')
-
-    last_completed_step = models.CharField(
-        max_length=20,
-        choices=LastCompletedStep.choices,
-        default=LastCompletedStep.CREATED
-    )
-
-    def save(self, *args, **kwargs):
-        """
-        Overrides the save method to automatically set the tenant
-        from the project's owner.
-        """
-        if not self.tenant_id and self.owner and self.owner.tenant_id:
-            self.tenant = self.owner.tenant
-        super(Project, self).save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} by {self.owner.username}"
