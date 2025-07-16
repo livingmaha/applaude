@@ -52,7 +52,7 @@ class DeploymentAgent(BaseAgent):
         2.  **Simulate Containerization (for testing):** Briefly explain how you would containerize the application to ensure a consistent testing environment.
         3.  **Simulate Deployment to Staging:** Detail the process of deploying the artifact to a staging environment and running a final suite of automated tests.
         4.  **Simulate Promotion to Production:** Describe the final step of promoting the build to the production environment, making it live.
-        5.  **Generate Confirmation:** Output a final success message and, most importantly, a simulated but realistic-looking download URL for the deployed application. The URL should follow the format: `https://cdn.applause.ai/apps/{project.id}/app.apk` (for Android) or `https://apps.apple.com/yourapp/{project.name.lower().replace(' ', '')}` (for iOS).
+        5.  **Generate Confirmation:** Output a final success message and, most importantly, a simulated but realistic-looking download URL for the deployed application. The URL should follow the format: `https://cdn.applaude.ai/apps/{project.id}/app.apk` (for Android) or `https://apps.apple.com/yourapp/{project.name.lower().replace(' ', '')}` (for iOS).
 
         **Output Constraint:**
         You MUST return a single, clean, valid Markdown-formatted report detailing these simulated steps and concluding with the final deployment link.
@@ -84,7 +84,7 @@ class DeploymentAgent(BaseAgent):
 
         **Deployment Complete:**
         Your application is now available at the following URL:
-        [https://cdn.applause.ai/apps/{project.id}/app.apk](https://cdn.applause.ai/apps/{project.id}/app.apk)
+        [https://cdn.applaude.ai/apps/{project.id}/app.apk](https://cdn.applaude.ai/apps/{project.id}/app.apk)
         """
 
         try:
@@ -92,8 +92,8 @@ class DeploymentAgent(BaseAgent):
                 project = Project.objects.select_for_update().get(id=project_id)
                 project.status = Project.ProjectStatus.COMPLETED
                 project.status_message = "Deployment successful. Your app is live!"
-                project.deployment_platform = "Applause" # Mark where it's 'hosted'
-                project.generated_code_path = f"https://cdn.applause.ai/apps/{project.id}/app.apk"
+                project.deployment_platform = "Applaude" # Mark where it's 'hosted'
+                project.generated_code_path = f"https://cdn.applaude.ai/apps/{project.id}/app.apk"
                 project.save()
 
             print(f"Deployment simulation complete for project {project_id}. Project is marked as COMPLETED.")
