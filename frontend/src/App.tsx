@@ -7,14 +7,13 @@ import AboutPage from './pages/AboutPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
+import CreateProjectPage from './pages/CreateProjectPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import FAQPage from './pages/FAQPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
-import AdminBlogPage from './pages/AdminBlogPage';
-import CreateBlogPost from './pages/CreateBlogPost';
-import EditBlogPost from './pages/EditBlogPost';
-import SubmitTestimonialPage from './pages/SubmitTestimonialPage'; // Import new page
+import AdminBlogPage from './pages/admin/BlogDashboard';
+
 
 import PrivateRoute from './components/auth/PrivateRoute';
 
@@ -30,15 +29,13 @@ function App() {
           <Route path="/signup"element={<SignupPage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/blog" element={<BlogPage />} />
-          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/blog/:id" element={<BlogPostPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+          <Route path="/create-project" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
           <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
-          <Route path="/submit-testimonial/:projectId" element={<PrivateRoute><SubmitTestimonialPage /></PrivateRoute>} /> {/* Add this route */}
           <Route path="/admin/blog" element={<PrivateRoute adminOnly={true}><AdminBlogPage /></PrivateRoute>} />
-          <Route path="/admin/blog/create" element={<PrivateRoute adminOnly={true}><CreateBlogPost /></PrivateRoute>} />
-          <Route path="/admin/blog/edit/:slug" element={<PrivateRoute adminOnly={true}><EditBlogPost /></PrivateRoute>} />
 
         </Routes>
       </Router>
