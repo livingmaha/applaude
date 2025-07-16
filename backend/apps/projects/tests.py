@@ -1,73 +1,73 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from apps.users.models import CustomUser
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import get_user_model
 from .models import Project
 
-class ProjectAPITests(APITestCase):
-    def setUp(self):
-        # Create a test user
-        self.user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='testpassword123')
-        self.client.force_authenticate(user=self.user)
-        
-        # URL for creating and listing projects
-        self.list_create_url = reverse('project-list-create')
-        
-    def test_create_project_form_mode(self):
-        """
-        Ensure we can create a new project using the form-based method.
-        """
-        data = {
-            'name': 'My Test App',
-            'source_url': 'https://example.com',
-            'app_type': 'ANDROID',
-            'supported_languages': '["en", "fr"]' # Sent as a JSON string
-        }
-        response = self.client.post(self.list_create_url, data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Project.objects.count(), 1)
-        project = Project.objects.get()
-        self.assertEqual(project.name, 'My Test App')
-        self.assertEqual(project.owner, self.user)
-        self.assertEqual(project.supported_languages, ["en", "fr"])
+User = get_user_model()
 
-    def test_create_project_zero_touch_mode(self):
-        """
-        Ensure we can create a new project using the zero-touch AI method.
-        """
-        prompt = "Build a simple app for my bakery."
-        data = {
-            'initial_prompt': prompt,
-            'supported_languages': '["en"]'
+class ProjectAPITests(APITestCase):
+
+    def setUp(self):
+        # Create a user and token for authentication
+        self.user = User.objects.create_user(email='test@applaude.ai', password='password123')
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        # URLs
+        self.create_url = reverse('project-create')
+        self.list_url = reverse('project-list')
+
+        # Project Data
+        self.project_data = {
+            'name': 'Test Project',
+            'website_url': 'https://example.com',
+            'app_type': 'iOS'
         }
-        response = self.client.post(self.list_create_url, data, format='multipart')
+
+    def test_create_project_authenticated(self):
+        """
+        Ensure an authenticated user can create a new project.
+        """
+        response = self.client.post(self.create_url, self.project_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Project.objects.count(), 1)
-        project = Project.objects.get()
-        self.assertEqual(project.initial_prompt, prompt)
-        self.assertTrue(project.name.startswith('App from prompt:'))
+        self.assertEqual(Project.objects.get().name, 'Test Project')
+
+    def test_create_project_unauthenticated(self):
+        """
+        Ensure an unauthenticated user cannot create a project.
+        """
+        self.client.logout()
+        response = self.client.post(self.create_url, self.project_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_projects(self):
         """
-        Ensure we can list the projects for the authenticated user.
+        Ensure an authenticated user can list their own projects.
         """
-        Project.objects.create(owner=self.user, name='Project 1', source_url='http://p1.com', app_type='IOS')
-        Project.objects.create(owner=self.user, name='Project 2', source_url='http://p2.com', app_type='ANDROID')
-        
-        # Create a project for another user that should not be listed
-        other_user = CustomUser.objects.create_user(username='otheruser', password='password')
-        Project.objects.create(owner=other_user, name='Other Project', source_url='http://p3.com', app_type='BOTH')
+        # Create a project for the user
+        Project.objects.create(user=self.user, **self.project_data)
 
-        response = self.client.get(self.list_create_url)
+        response = self.client.get(self.list_url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-        self.assertEqual(response.data[0]['name'], 'Project 2') # Ordered by creation date descending
-        self.assertEqual(response.data[1]['name'], 'Project 1')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], self.project_data['name'])
 
-    def test_unauthenticated_access(self):
+    def test_list_projects_isolates_data(self):
         """
-        Ensure unauthenticated users cannot access project endpoints.
+        Ensure a user cannot see projects created by another user.
         """
-        self.client.force_authenticate(user=None)
-        response = self.client.get(self.list_create_url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        # Create a project for the main test user
+        Project.objects.create(user=self.user, **self.project_data)
+
+        # Create another user and their project
+        other_user = User.objects.create_user(email='other@applaude.ai', password='password123')
+        Project.objects.create(user=other_user, name='Other Project', website_url='https://other.com', app_type='Android')
+
+        # The main user should only see their own project
+        response = self.client.get(self.list_url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertNotEqual(response.data[0]['name'], 'Other Project')
