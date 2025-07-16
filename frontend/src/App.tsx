@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 
+// Page Imports
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import LoginPage from './pages/LoginPage';
@@ -13,8 +14,9 @@ import FAQPage from './pages/FAQPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
 import AdminBlogPage from './pages/admin/BlogDashboard';
+import NotFoundPage from './pages/NotFoundPage'; // Import the new 404 page
 
-
+// Component Imports
 import PrivateRoute from './components/auth/PrivateRoute';
 
 function App() {
@@ -36,7 +38,9 @@ function App() {
           <Route path="/create-project" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
           <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
           <Route path="/admin/blog" element={<PrivateRoute adminOnly={true}><AdminBlogPage /></PrivateRoute>} />
-
+          
+          {/* Catch-all 404 Route */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>
     </AuthProvider>
