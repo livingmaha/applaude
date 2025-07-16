@@ -13,10 +13,10 @@ interface FAQItemProps {
 
 const FAQItem = ({ question, answer, isOpen, onClick }: FAQItemProps) => {
   return (
-    <div className="border-b border-gray-700 py-6">
+    <div className="border-b border-gray-200 py-6">
       <button
         onClick={onClick}
-        className="w-full flex justify-between items-center text-left text-lg font-semibold text-soft-white"
+        className="w-full flex justify-between items-center text-left text-lg font-semibold text-black"
       >
         <span>{question}</span>
         <ChevronDown
@@ -31,7 +31,7 @@ const FAQItem = ({ question, answer, isOpen, onClick }: FAQItemProps) => {
           isOpen ? 'max-h-screen mt-4' : 'max-h-0'
         }`}
       >
-        <p className="text-gray-400">{answer}</p>
+        <p className="text-gray-600">{answer}</p>
       </div>
     </div>
   );
@@ -56,11 +56,11 @@ const FAQPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-quantum-black text-soft-white">
+    <div className="min-h-screen bg-white text-black">
       <Header />
       <main className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-ion-blue to-fusion-pink">
+          <h1 className="text-4xl md:text-5xl font-bold text-center mb-12">
             {t('faq_title')}
           </h1>
           <div className="space-y-4">
