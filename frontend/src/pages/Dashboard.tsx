@@ -1,109 +1,123 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { PlusCircle, Loader2 } from 'lucide-react';
-
-import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import apiClient from '../services/api';
+import { AuthContext } from '../contexts/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import ProjectList from '../components/projects/ProjectList';
-import NewProjectModal from '../components/projects/NewProjectModal';
-
-interface Project {
-    id: number;
-    name: string;
-    website_url: string;
-    app_type: 'iOS' | 'Android';
-    status: string;
-    status_message: string;
-}
+import { Project } from '../types';
+import { Plus, BarChart2, CheckCircle, Clock } from 'lucide-react';
 
 const DashboardPage = () => {
-    const { t } = useTranslation();
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const authContext = useContext(AuthContext);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchProjects = async () => {
+            if (!authContext?.isAuthenticated) return;
             try {
-                const response = await api.get('/projects/');
+                const response = await apiClient.get('/projects/');
                 setProjects(response.data);
-            } catch (error) {
-                toast.error('Failed to fetch projects. Please try again.');
-                console.error("Project fetch error:", error);
+            } catch (err: any) {
+                setError('Failed to load your projects. Please try again.');
+                console.error(err);
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
-
         fetchProjects();
-    }, []);
+    }, [authContext?.isAuthenticated]);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/');
+    const completedProjects = projects.filter(p => p.status === 'COMPLETED').length;
+    const inProgressProjects = projects.length - completedProjects;
+
+    const getStatusChip = (status: string) => {
+        const statusMap: { [key: string]: { text: string, color: string } } = {
+            'PENDING': { text: 'Pending', color: 'bg-yellow-200 text-yellow-800' },
+            'COMPLETED': { text: 'Completed', color: 'bg-green-200 text-green-800' },
+            'FAILED': { text: 'Failed', color: 'bg-red-200 text-red-800' },
+        };
+        const { text, color } = statusMap[status] || { text: status.replace(/_/g, ' '), color: 'bg-gray-200 text-gray-800' };
+        return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${color}`}>{text}</span>;
     };
-
-    const handleProjectCreated = (newProject: Project) => {
-        setProjects(prevProjects => [newProject, ...prevProjects]);
-        navigate(`/project/${newProject.id}`);
-    };
-
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-gray-50 text-black">
             <Header />
-
-            <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-                        {t('welcome_back', { email: user?.email })}
-                    </h1>
-                    <Button onClick={handleLogout} variant="secondary">
-                        {t('logout')}
-                    </Button>
+            <main className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between items-center mb-8">
+                    <h1 className="text-3xl font-bold">Welcome, {authContext?.user?.username || 'User'}!</h1>
+                    <Link to="/create-project" className="flex items-center gap-2 px-4 py-2 bg-fusion-pink text-white font-bold rounded-lg hover:bg-opacity-90 transition-all">
+                        <Plus size={20} />
+                        New Project
+                    </Link>
                 </div>
 
-                <Card>
-                    <div className="p-6">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                            <h2 className="text-xl font-semibold text-gray-700 mb-2 sm:mb-0">{t('my_projects')}</h2>
-                             <Button onClick={() => setIsModalOpen(true)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> {t('new_project')}
-                            </Button>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <Card className="p-6 flex items-center gap-4 bg-white">
+                        <BarChart2 size={40} className="text-ion-blue" />
+                        <div>
+                            <p className="text-gray-500">Total Projects</p>
+                            <p className="text-3xl font-bold">{projects.length}</p>
                         </div>
+                    </Card>
+                     <Card className="p-6 flex items-center gap-4 bg-white">
+                        <CheckCircle size={40} className="text-green-500" />
+                        <div>
+                            <p className="text-gray-500">Completed</p>
+                            <p className="text-3xl font-bold">{completedProjects}</p>
+                        </div>
+                    </Card>
+                     <Card className="p-6 flex items-center gap-4 bg-white">
+                        <Clock size={40} className="text-yellow-500" />
+                        <div>
+                            <p className="text-gray-500">In Progress</p>
+                            <p className="text-3xl font-bold">{inProgressProjects}</p>
+                        </div>
+                    </Card>
+                </div>
 
-                        {isLoading ? (
-                            <div className="flex justify-center items-center h-40">
-                                <Loader2 className="animate-spin h-8 w-8 text-ion-blue" />
-                            </div>
-                        ) : projects.length > 0 ? (
-                            <ProjectList projects={projects} />
-                        ) : (
-                            <div className="text-center py-10">
-                                <p className="text-gray-500">{t('no_projects')}</p>
-                                <Button onClick={() => setIsModalOpen(true)} className="mt-4">
-                                    <PlusCircle className="mr-2 h-4 w-4" /> {t('new_project')}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
+                <Card className="p-8 bg-white">
+                    <h2 className="text-2xl font-bold mb-6">Your Projects</h2>
+                    {loading ? (
+                        <p>Loading projects...</p>
+                    ) : error ? (
+                        <p className="text-red-500">{error}</p>
+                    ) : projects.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {projects.map((project) => (
+                                        <tr key={project.id} onClick={() => navigate(`/project/${project.id}`)} className="hover:bg-gray-100 cursor-pointer">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">{project.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.app_type}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(project.created_at).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">{getStatusChip(project.status)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="text-center py-10">
+                            <p className="text-gray-500 mb-4">You haven't created any projects yet.</p>
+                            <Link to="/create-project" className="text-ion-blue font-bold hover:underline">Start your first project</Link>
+                        </div>
+                    )}
                 </Card>
             </main>
-
-            <NewProjectModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onProjectCreated={handleProjectCreated}
-            />
-
             <Footer />
         </div>
     );
