@@ -1,58 +1,67 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import Card from '../components/ui/Card';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
+import { LogIn, Loader2 } from 'lucide-react';
+import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import { Lock, Mail } from 'lucide-react';
-import { AuthContext } from '../contexts/AuthContext';
+import logoIcon from '../assets/images/logo_icon.png';
+
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const auth = useAuth();
     const navigate = useNavigate();
-    const authContext = useContext(AuthContext);
 
-    if (!authContext) {
-        throw new Error('AuthContext must be used within an AuthProvider');
-    }
-
-    const { login } = authContext;
-
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
-        try {
-            await login(email, password);
+        setIsLoading(true);
+        const success = await auth.login(email, password);
+        setIsLoading(false);
+        if (success) {
+            toast.success('Login successful!');
             navigate('/dashboard');
-        } catch (err: any) {
-            if (err.response) {
-                setError(JSON.stringify(err.response.data));
-            } else {
-                setError('Login failed. Please check your credentials.');
-            }
+        } else {
+            // Error toast is handled within the AuthContext
         }
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen p-4 bg-quantum-black">
-            <Card className="w-full max-w-md p-8">
-                <h2 className="text-3xl font-bold text-center text-soft-white mb-2">Welcome Back</h2>
-                <p className="text-center text-gray-400 mb-8">Log in to continue your journey.</p>
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <Input icon={<Mail size={18} />} type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                    <Input icon={<Lock size={18} />} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                    {error && <p className="text-solar-orange text-sm">{error}</p>}
-                    <button type="submit" className="w-full bg-fusion-pink text-white font-bold py-3 rounded-lg hover:bg-opacity-90 transition-all duration-300">
-                        Log In
-                    </button>
+        <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
+             <div className="text-center mb-8">
+                <Link to="/" className="inline-flex items-center gap-2">
+                    <img src={logoIcon} alt="Applaude Logo" className="w-10 h-10" />
+                    <span className="text-3xl font-bold text-black">Applaude</span>
+                </Link>
+            </div>
+            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
+                <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Welcome Back</h2>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <Input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                    <Input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                    <Button type="submit" disabled={isLoading} className="w-full">
+                        {isLoading ? <Loader2 className="animate-spin mr-2" /> : <LogIn className="mr-2 h-4 w-4" />}
+                        Login
+                    </Button>
                 </form>
-                <p className="text-center text-gray-400 mt-6">
-                    Don't have an account?{' '}
-                    <Link to="/signup" className="text-ion-blue hover:underline">
-                        Sign Up
-                    </Link>
+                <p className="text-center text-sm text-gray-600 mt-6">
+                    Don't have an account? <Link to="/signup" className="font-medium text-ion-blue hover:underline">Sign up</Link>
                 </p>
-            </Card>
+            </div>
         </div>
     );
 };
