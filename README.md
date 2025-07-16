@@ -1,6 +1,6 @@
-# Applause API: AI-Powered Mobile App Generation Platform
+# Applaude API: AI-Powered Mobile App Generation Platform
 
-Applause is a revolutionary platform that uses a swarm of specialized AI agents to build native mobile applications from a simple website URL or a text prompt. This repository contains the complete codebase for the Applause project, including the Django backend and the React frontend.
+Applaude is a revolutionary platform that uses a swarm of specialized AI agents to build native mobile applications from a simple website URL or a text prompt. This repository contains the complete codebase for the Applaude project, including the Django backend and the React frontend.
 
 ## Tech Stack
 
@@ -25,8 +25,8 @@ Applause is a revolutionary platform that uses a swarm of specialized AI agents 
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-repo/applause.git](https://github.com/your-repo/applause.git)
-    cd applause/backend
+    git clone [https://github.com/your-repo/applaude.git](https://github.com/your-repo/applaude.git)
+    cd applaude/backend
     ```
 
 2.  **Create and activate a virtual environment:**
@@ -45,7 +45,7 @@ Applause is a revolutionary platform that uses a swarm of specialized AI agents 
     ```env
     SECRET_KEY='your-strong-secret-key'
     DEBUG=True
-    DATABASE_URL='postgres://user:password@localhost:5432/applause_db'
+    DATABASE_URL='postgres://user:password@localhost:5432/applaude_db'
     CORS_ALLOWED_ORIGINS='http://localhost:5173'
     PAYSTACK_SECRET_KEY='sk_your_paystack_secret_key'
     CELERY_BROKER_URL='redis://localhost:6379/0'
@@ -65,7 +65,7 @@ Applause is a revolutionary platform that uses a swarm of specialized AI agents 
 
 7.  **Run the Celery worker (in a separate terminal):**
     ```bash
-    celery -A applause_api worker -l info
+    celery -A applaude_api worker -l info
     ```
 
 ### Frontend Setup
@@ -109,7 +109,7 @@ Applause is a revolutionary platform that uses a swarm of specialized AI agents 
     ```yaml
     option_settings:
       aws:elasticbeanstalk:container:python:
-        WSGIPath: applause_api.wsgi:application
+        WSGIPath: applaude_api.wsgi:application
     ```
 
 3.  **Create a `requirements.txt` file:**
