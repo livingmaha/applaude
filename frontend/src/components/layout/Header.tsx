@@ -27,8 +27,8 @@ const Header = () => {
     return (
         <header className="sticky top-0 z-50 bg-white bg-opacity-80 backdrop-blur-lg shadow-md p-4 flex justify-between items-center">
             <div className="flex items-center gap-2">
-                <img src={logoIcon} alt="Applause Logo" className="w-8 h-8" />
-                <Link to="/" className="text-2xl font-bold text-black">Applause</Link>
+                <img src={logoIcon} alt="Applaude Logo" className="w-8 h-8" />
+                <Link to="/" className="text-2xl font-bold text-black">Applaude</Link>
             </div>
             <nav className="space-x-6 hidden md:flex items-center">
                 <Link to="/about" className="text-black hover:text-ion-blue transition-colors">{t('about')}</Link>
