@@ -35,6 +35,10 @@ module.exports = {
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'slide-in-right': 'slide-in-right 0.5s ease-out forwards',
       },
+      screens: {
+        '2xl': '1536px',
+        '3xl': '1920px',
+      },
     },
   },
   plugins: [],
