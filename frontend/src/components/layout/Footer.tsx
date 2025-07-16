@@ -13,10 +13,10 @@ const Footer = () => {
                              <span className="text-2xl font-bold text-black">Applaude</span>
                         </div>
                         <p className="text-gray-500 text-base">
-                            The future of mobile apps, Lead the Applause.
+                            The future of mobile apps, built today.
                         </p>
                         <div className="flex space-x-6">
-                            <a href="https://github.com/mugambi-ndeke/applaude" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
+                            <a href="https://github.com/your-repo/applaude" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
                                 <span className="sr-only">GitHub</span>
                                 <Github className="h-6 w-6" />
                             </a>
@@ -38,9 +38,6 @@ const Footer = () => {
                                     <li>
                                         <Link to="/#how-it-works" className="text-base text-gray-500 hover:text-gray-900">How It Works</Link>
                                     </li>
-                                     <li>
-                                        <Link to="/pricing" className="text-base text-gray-500 hover:text-gray-900">Pricing</Link>
-                                    </li>
                                 </ul>
                             </div>
                             <div className="mt-12 md:mt-0">
@@ -51,6 +48,9 @@ const Footer = () => {
                                     </li>
                                      <li>
                                         <Link to="/blog" className="text-base text-gray-500 hover:text-gray-900">Blog</Link>
+                                    </li>
+                                     <li>
+                                        <Link to="/faq" className="text-base text-gray-500 hover:text-gray-900">FAQ</Link>
                                     </li>
                                 </ul>
                             </div>
