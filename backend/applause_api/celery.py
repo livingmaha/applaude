@@ -1,11 +1,10 @@
-
 import os
 from celery import Celery
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'applause_api.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'applaude_api.settings')
 
-app = Celery('applause_api')
+app = Celery('applaude_api')
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
