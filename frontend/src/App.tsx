@@ -14,6 +14,7 @@ import BlogPostPage from './pages/BlogPostPage';
 import AdminBlogPage from './pages/AdminBlogPage';
 import CreateBlogPost from './pages/CreateBlogPost';
 import EditBlogPost from './pages/EditBlogPost';
+import SubmitTestimonialPage from './pages/SubmitTestimonialPage'; // Import new page
 
 import PrivateRoute from './components/auth/PrivateRoute';
 
@@ -34,6 +35,7 @@ function App() {
           {/* Protected Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
+          <Route path="/submit-testimonial/:projectId" element={<PrivateRoute><SubmitTestimonialPage /></PrivateRoute>} /> {/* Add this route */}
           <Route path="/admin/blog" element={<PrivateRoute adminOnly={true}><AdminBlogPage /></PrivateRoute>} />
           <Route path="/admin/blog/create" element={<PrivateRoute adminOnly={true}><CreateBlogPost /></PrivateRoute>} />
           <Route path="/admin/blog/edit/:slug" element={<PrivateRoute adminOnly={true}><EditBlogPost /></PrivateRoute>} />
