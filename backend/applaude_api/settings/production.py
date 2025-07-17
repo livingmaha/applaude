@@ -10,18 +10,6 @@ DEBUG = False
 
 ALLOWED_HOSTS = [".vercel.app", ".amazonaws.com"]
 
-sentry_sdk.init(
-    dsn=secrets['SENTRY_DSN'],
-    integrations=[
-        DjangoIntegration(),
-        CeleryIntegration(),
-        RedisIntegration(),
-    ],
-    traces_sample_rate=1.0,
-    send_default_pii=True,
-    environment="production"
-)
-
 # AWS Secrets Manager
 def get_secret():
     secret_name = "applaude/production"
@@ -52,16 +40,14 @@ secrets = get_secret()
 SECRET_KEY = secrets['DJANGO_SECRET_KEY']
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': secrets['DB_NAME'],
         'USER': secrets['DB_USER'],
         'PASSWORD': secrets['DB_PASSWORD'],
         'HOST': secrets['DB_HOST'],
         'PORT': secrets['DB_PORT'],
         'OPTIONS': {
-            'ssl': {
-                'ca': '/path/to/your/ca-cert.pem',
-            }
+            'sslmode': 'require',
         }
     }
 }
@@ -75,6 +61,33 @@ CHANNEL_LAYERS = {
     },
 }
 
+# Sentry Configuration
+sentry_sdk.init(
+    dsn=secrets.get('SENTRY_DSN'),
+    integrations=[
+        DjangoIntegration(),
+        CeleryIntegration(),
+        RedisIntegration(),
+    ],
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    environment="production"
+)
+
+
+# Static files settings
+AWS_ACCESS_KEY_ID = secrets.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = secrets.get('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = secrets.get('S3_BUCKET_NAME')
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_LOCATION = 'static'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -87,4 +100,14 @@ LOGGING = {
         "handlers": ["console"],
         "level": "INFO",
     },
+}
+
+# Celery Configuration
+CELERY_BROKER_URL = f"redis://{secrets['REDIS_HOST']}:{secrets['REDIS_PORT']}/0"
+CELERY_RESULT_BACKEND = f"redis://{secrets['REDIS_HOST']}:{secrets['REDIS_PORT']}/0"
+CELERY_BROKER_USE_SSL = {
+    'ssl_cert_reqs': 'required',
+}
+CELERY_REDIS_BACKEND_USE_SSL = {
+    'ssl_cert_reqs': 'required',
 }
