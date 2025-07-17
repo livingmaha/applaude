@@ -7,8 +7,9 @@ import { api } from '../api/axios';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { PlusCircle, Loader, AlertTriangle, ArrowRight } from 'lucide-react';
+import type { Project } from '@/types';
 
-// Define the type for a single project
+
 interface Project {
     id: string;
     name: string;
