@@ -1,34 +1,37 @@
-# Applaude - AI-Powered App Generation Platform
+# Applaude: AI-Powered Mobile App Generator
 
-Applaude is a revolutionary platform that leverages generative AI to transform a simple URL into a fully functional, production-ready mobile application. Our vision is to empower creators, entrepreneurs, and businesses to launch their ideas instantly, without writing a single line of code.
+[![CI/CD Status](https://github.com/your-username/applaude/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/your-username/applaude/actions/workflows/ci-cd.yml)
 
-## Tech Stack
+Applaude is a platform that empowers users to generate fully functional, user-generated mobile applications using the power of generative AI.
 
-- **Frontend:** React (Vite), TypeScript, Tailwind CSS, Zustand
-- **Backend:** Django, Django Rest Framework, Celery
-- **Database:** PostgreSQL
-- **AI:** Google's Gemini Pro
-- **Deployment:** Vercel (Frontend), AWS Elastic Beanstalk (Backend), AWS RDS (Database), AWS ElastiCache (Celery Broker)
+## Production-Ready Architecture
 
-## Project Structure
+This platform has been architected for extreme scalability and security, ready to handle over 100 million users.
 
-.
-├── backend/         # Django REST Framework Backend
-├── frontend/        # React (Vite) Frontend
-├── docs/            # Project Documentation (ADRs, etc.)
-├── tests/           # E2E Tests
-└── .github/         # CI/CD Workflows
+### Core Technologies
 
+-   **Frontend:** [React](https://reactjs.org/) (with [Vite](https://vitejs.dev/)) deployed on [Vercel](https://vercel.com/).
+-   **Backend:** [Django](https://www.djangoproject.com/) deployed on [AWS Elastic Beanstalk](https://aws.amazon.com/elastic-beanstalk/) using Docker.
+-   **Database:** [MySQL](https://www.mysql.com/) on [AWS RDS](https://aws.amazon.com/rds/) for high availability and automated backups.
+-   **Background Tasks:** [Celery](https://docs.celeryq.dev/) with [Redis](https://redis.io/) on [AWS ElastiCache](https://aws.amazon.com/elasticache/) for asynchronous processing.
+-   **CI/CD:** Fully automated deployments using [GitHub Actions](#cicd-pipeline).
 
-## Getting Started
+### Key Architectural Features
+
+-   **Automated CI/CD:** Every push to `main` is automatically tested, scanned, built, and deployed.
+-   **High Availability:** Utilizes Multi-AZ deployments for AWS RDS and an automated failover plan with Route 53.
+-   **Auto Scaling:** The backend environment scales automatically based on CPU load to handle traffic spikes cost-effectively.
+-   **Security:** Multi-layered security approach including AWS Secrets Manager, granular API rate limiting, and a secure multi-stage Docker build.
+-   **Monitoring:** Integrated with Sentry for real-time error tracking on both frontend and backend.
+
+## Getting Started (for Developers)
 
 ### Prerequisites
 
-- Node.js (v18 or later)
-- Python (v3.11 or later)
-- Docker & Docker Compose
-- AWS CLI (configured with credentials)
-- Vercel CLI (logged in)
+-   Docker & Docker Compose
+-   Python 3.11+
+-   Node.js 18+
+-   An AWS account with credentials configured locally.
 
 ### Backend Setup
 
@@ -36,20 +39,16 @@ Applaude is a revolutionary platform that leverages generative AI to transform a
     ```bash
     cd backend
     ```
-2.  **Create and activate a virtual environment:**
+2.  **Create a virtual environment:**
     ```bash
-    python -m venv venv
-    source venv/bin/activate # On Windows use `venv\Scripts\activate`
+    python3 -m venv venv && source venv/bin/activate
     ```
 3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 4.  **Set up environment variables:**
-    Copy `.env.example` to `.env` and fill in the required values (Database URL, secret keys, etc.).
-    ```bash
-    cp .env.example .env
-    ```
+    Copy `.env.example` to `.env` and fill in the values for your local database and other settings.
 5.  **Run database migrations:**
     ```bash
     python manage.py migrate
@@ -69,37 +68,16 @@ Applaude is a revolutionary platform that leverages generative AI to transform a
     ```bash
     npm install
     ```
-3.  **Start the development server:**
+3.  **Set up environment variables:**
+    Copy `.env.example` to `.env.local` and set `VITE_API_BASE_URL` to point to your local backend (e.g., `http://127.0.0.1:8000`).
+4.  **Start the development server:**
     ```bash
     npm run dev
     ```
-    The application will be available at `http://localhost:5173`.
 
----
+## Important Documentation
 
-## Component Library (Storybook)
-
-We use Storybook to document and develop our UI components in isolation.
-
-1.  **Navigate to the frontend directory:**
-    ```bash
-    cd frontend
-    ```
-2.  **Run Storybook:**
-    ```bash
-    npm run storybook
-    ```
-    Storybook will open in your browser, typically at `http://localhost:6006`.
-
-## CI/CD
-
-Our CI/CD pipeline is managed by GitHub Actions and can be found in `.github/workflows/ci-cd.yml`. It includes:
-
--   Linting and security scans for both frontend and backend.
--   Automated deployments to Vercel (for frontend previews and production).
--   Automated deployments to AWS Elastic Beanstalk (for backend production).
-
-## Deployment
-
--   **Frontend:** The frontend is automatically deployed to Vercel on every push to the `main` branch.
--   **Backend:** The backend is automatically deployed to AWS Elastic Beanstalk on every push to the `main` branch. The deployment process builds a Docker container, pushes it to ECR, and updates the Elastic Beanstalk environment.
+-   [**Deployment Checklist**](./DEPLOYMENT_CHECKLIST.md): Step-by-step guide for production deployments.
+-   [**Disaster Recovery Plan**](./DISASTER_RECOVERY.md): Details on the automated failover strategy.
+-   [**FinOps Strategy**](./FINOPS.md): Overview of cost management and optimization.
+-   [**API Versioning**](./docs/API_VERSIONING.md): Strategy for API evolution and deprecation.
