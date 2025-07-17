@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'django_celery_results',
     'storages',
+    'ratelimit',
     # Local apps
     'apps.users',
     'apps.projects',
@@ -114,12 +115,12 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
+        'ratelimit.django.RatelimitMiddleware',
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
-        'user': '1000/hour'
+        'user': '1000/hour',
+        'api': '5000/hour',
     }
 }
 
