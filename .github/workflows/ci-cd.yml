@@ -158,6 +158,7 @@ jobs:
         run: |
           mkdir -p .ebextensions
           echo '{"AWSEBDockerrunVersion": "1", "Image": {"Name": "${{ needs.build-and-push-to-ecr.outputs.image }}", "Update": "true"}, "Ports": [{"ContainerPort": "8000"}]}' > Dockerrun.aws.json
+          cp -R backend/.ebextensions .
           zip -r deploy.zip Dockerrun.aws.json .ebextensions
 
       - name: Deploy to AWS Elastic Beanstalk
