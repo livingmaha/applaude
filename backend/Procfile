@@ -1,0 +1,3 @@
+web: gunicorn --bind 0.0.0.0:8000 --config gunicorn.conf.py applaude_api.wsgi:application
+celery_worker: celery -A applaude_api worker --loglevel=info
+celery_beat: celery -A applaude_api beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
