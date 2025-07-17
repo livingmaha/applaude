@@ -73,7 +73,7 @@ class InitializePaymentView(APIView):
             return Response({'error': 'Invalid plan type.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            project = Project.objects.get(id=project_id, owner=request.user)
+            project = Project.objects.select_related('owner').get(id=project_id, owner=request.user)
         except Project.DoesNotExist:
             return Response({'error': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
 
