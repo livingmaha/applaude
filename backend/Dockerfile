@@ -2,40 +2,42 @@
 # Use a full Python image to install dependencies
 FROM python:3.11-slim as builder
 
-WORKDIR /app
+WORKDIR /usr/src/app
+
+# Install system dependencies required for MySQL client
+RUN apt-get update && apt-get install -y default-libmysqlclient-dev build-essential
 
 # Set environment variables to prevent caching of pip packages
-ENV PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    POETRY_NO_INTERACTION=1
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-# Install Poetry
-RUN pip install poetry
+# Copy the requirements file
+COPY ./backend/requirements.txt .
 
-# Copy only the files necessary for installing dependencies
-COPY poetry.lock pyproject.toml ./
-
-# Install dependencies into a virtual environment
-RUN poetry install --no-root --no-dev --path .venv
+# Install dependencies
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
 # --- Final Stage ---
 # Use a minimal base image for the final application
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /usr/src/app
+
+# Install system dependencies required for MySQL client
+RUN apt-get update && apt-get install -y default-libmysqlclient-dev && rm -rf /var/lib/apt/lists/*
 
 # Copy the virtual environment from the builder stage
-COPY --from=builder /app/.venv ./.venv
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
 
-# Set the PATH to include the virtual environment's bin directory
-ENV PATH="/app/.venv/bin:$PATH"
+# Install dependencies from wheels
+RUN pip install --no-cache /wheels/*
 
 # Copy the application source code
-COPY . .
+COPY ./backend .
 
 # Expose the port the app runs on
 EXPOSE 8000
 
 # The command to run the application using Gunicorn (a production-grade WSGI server)
-# The --chdir flag is important for Django to find the manage.py file
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--chdir", "backend", "applaude_api.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "applaude_api.wsgi:application"]
