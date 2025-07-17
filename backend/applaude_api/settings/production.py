@@ -118,4 +118,4 @@ EMAIL_BACKEND = 'django_ses.SESBackend'
 AWS_SES_ACCESS_KEY_ID = secrets.get('AWS_SES_ACCESS_KEY_ID')
 AWS_SES_SECRET_ACCESS_KEY = secrets.get('AWS_SES_SECRET_ACCESS_KEY')
 AWS_SES_REGION_NAME = 'us-east-1'
-DEFAULT_FROM_EMAIL = 'noreply@applaude.ai'
+DEFAULT_FROM_EMAIL = 'john@applaude.pro'
