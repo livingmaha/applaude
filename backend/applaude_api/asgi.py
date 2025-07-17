@@ -1,16 +1,17 @@
 import os
-from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-import apps.api.routing
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'applaude_api.settings')
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
+import apps.projects.routing
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'applaude_api.settings.production')
 
 application = ProtocolTypeRouter({
-  "http": get_asgi_application(),
-  "websocket": AuthMiddlewareStack(
+    "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
         URLRouter(
-            apps.api.routing.websocket_urlpatterns
+            apps.projects.routing.websocket_urlpatterns
         )
     ),
 })
