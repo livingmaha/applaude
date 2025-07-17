@@ -1,26 +1,23 @@
 import axios from 'axios';
+import { getAccessToken } from '@/stores/useAuth';
 
-// The base URL for our Django backend API
-// Use Vite's import.meta.env for environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/';
-
-// Create an instance of axios with default settings
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  withCredentials: true, // Important for sending HttpOnly cookies
 });
 
-// Add an interceptor to automatically attach the auth token to every request.
-apiClient.interceptors.request.use(config => {
-    const token = localStorage.getItem('token');
+// Request interceptor to add the auth token to headers
+api.interceptors.request.use(
+  (config) => {
+    const token = getAccessToken();
     if (token) {
-        config.headers.Authorization = `Token ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-}, error => {
+  },
+  (error) => {
     return Promise.reject(error);
-});
+  }
+);
 
-export default apiClient;
+export default api;
