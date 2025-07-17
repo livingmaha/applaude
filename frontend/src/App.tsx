@@ -1,44 +1,67 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// Page Imports
-import HomePage from './pages/HomePage';
-import AboutPage from './pages/AboutPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import DashboardPage from './pages/DashboardPage';
-import CreateProjectPage from './pages/CreateProjectPage';
-import ProjectDetailPage from './pages/ProjectDetailPage';
-import FAQPage from './pages/FAQPage';
-import BlogPage from './pages/BlogPage';
-import BlogPostPage from './pages/BlogPostPage';
-import AdminBlogPage from './pages/admin/BlogDashboard';
-import NotFoundPage from './pages/NotFoundPage';
+// Layouts
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
-// Component Imports
-import PrivateRoute from './components/auth/PrivateRoute';
+// Core Pages
+import LandingPage from '@/pages/LandingPage';
+import LoginPage from '@/pages/LoginPage';
+import SignUpPage from '@/pages/SignUpPage';
+import Dashboard from '@/pages/Dashboard';
+import CreateProjectPage from '@/pages/CreateProjectPage';
+import ProjectDetailPage from '@/pages/ProjectDetailPage';
+import NotFoundPage from '@/pages/NotFoundPage';
+
+// Auth & Routing
+import PrivateRoute from '@/components/auth/PrivateRoute';
 
 function App() {
   return (
     <Router>
-      <Toaster position="top-right" richColors />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup"element={<SignupPage />} />
-        <Route path="/faq" element={<FAQPage />} />
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/blog/:id" element={<BlogPostPage />} />
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Protected Routes */}
-        <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-        <Route path="/create-project" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
-        <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
-        <Route path="/admin/blog" element={<PrivateRoute adminOnly={true}><AdminBlogPage /></PrivateRoute>} />
-        
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+            {/* Private Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/create-project"
+              element={
+                <PrivateRoute>
+                  <CreateProjectPage />
+                </PrivateRoute>
+              }
+            />
+             <Route
+              path="/project/:projectId"
+              element={
+                <PrivateRoute>
+                  <ProjectDetailPage />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Catch-all Not Found Route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </main>
+        <Footer />
+        <Toaster richColors position="top-right" />
+      </div>
     </Router>
   );
 }
