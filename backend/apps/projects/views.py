@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions
 from .models import Project, Testimonial, MobileApp
 from .serializers import ProjectSerializer, TestimonialSerializer, MobileAppSerializer
+from ratelimit.decorators import ratelimit
 
 class IsOwner(permissions.BasePermission):
     """
@@ -21,6 +22,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
     """
     serializer_class = ProjectSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+    @ratelimit(key='user', rate='10/m', method='GET', block=True)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @ratelimit(key='user', rate='5/m', method='POST', block=True)
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
 
     def get_queryset(self):
         """
