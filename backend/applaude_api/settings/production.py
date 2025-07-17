@@ -40,7 +40,7 @@ secrets = get_secret()
 SECRET_KEY = secrets['DJANGO_SECRET_KEY']
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': secrets['DB_NAME'],
         'USER': secrets['DB_USER'],
         'PASSWORD': secrets['DB_PASSWORD'],
@@ -74,7 +74,6 @@ sentry_sdk.init(
     environment="production"
 )
 
-
 # Static files settings
 AWS_ACCESS_KEY_ID = secrets.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = secrets.get('AWS_SECRET_ACCESS_KEY')
@@ -86,7 +85,6 @@ AWS_S3_OBJECT_PARAMETERS = {
 AWS_LOCATION = 'static'
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
 
 LOGGING = {
     "version": 1,
@@ -103,11 +101,22 @@ LOGGING = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = f"redis://{secrets['REDIS_HOST']}:{secrets['REDIS_PORT']}/0"
-CELERY_RESULT_BACKEND = f"redis://{secrets['REDIS_HOST']}:{secrets['REDIS_PORT']}/0"
+CELERY_BROKER_URL = f"redis://{secrets.get('REDIS_HOST')}:{secrets.get('REDIS_PORT', 6379)}/0"
+CELERY_RESULT_BACKEND = f"redis://{secrets.get('REDIS_HOST')}:{secrets.get('REDIS_PORT', 6379)}/0"
 CELERY_BROKER_USE_SSL = {
     'ssl_cert_reqs': 'required',
 }
 CELERY_REDIS_BACKEND_USE_SSL = {
     'ssl_cert_reqs': 'required',
 }
+
+
+# Rate Limiting
+RATELIMIT_ENABLE = True
+RATELIMIT_GROUP_PREFIX = 'ratelimit'
+RATELIMIT_KEY_PREFIX = 'rl'
+RATELIMIT_USE_CACHE = 'default'
+RATELIMIT_CACHE_PREFIX = 'rl:'
+RATELIMIT_GLOBAL = '1000/h'
+RATELIMIT_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
+RATELIMIT_SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
