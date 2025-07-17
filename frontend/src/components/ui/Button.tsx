@@ -1,27 +1,49 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'tertiary';
-  children: React.ReactNode;
-}
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-fusion-pink text-white hover:bg-fusion-pink/90',
+        secondary: 'bg-ion-blue text-black hover:bg-ion-blue/80',
+        tertiary: 'bg-solar-orange text-black hover:bg-solar-orange/80',
+        destructive: 'bg-red-500 text-white hover:bg-red-500/90',
+        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        link: 'text-primary underline-offset-4 hover:underline',
+      },
+      size: {
+        default: 'h-10 px-4 py-2',
+        sm: 'h-9 rounded-md px-3',
+        lg: 'h-11 rounded-md px-8',
+        icon: 'h-10 w-10',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'default',
+    },
+  }
+);
 
-const Button: React.FC<ButtonProps> = ({ className, variant = 'primary', children, ...props }) => {
-  const baseClasses = "px-6 py-3 font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform focus:outline-none focus:ring-4 focus:ring-opacity-50 hover:scale-105 active:scale-100 animate-pulse-glow";
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {}
 
-  const variantClasses = {
-    primary: 'bg-fusion-pink text-white hover:shadow-lg hover:shadow-fusion-pink/30 focus:ring-fusion-pink',
-    secondary: 'bg-ion-blue text-black hover:shadow-lg hover:shadow-ion-blue/30 focus:ring-ion-blue',
-    tertiary: 'bg-solar-orange text-black hover:shadow-lg hover:shadow-solar-orange/30 focus:ring-solar-orange',
-  };
-
-  return (
-    <button
-      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-};
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, ...props }, ref) => {
+    return (
+      <button
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Button.displayName = 'Button';
 
 export default Button;
