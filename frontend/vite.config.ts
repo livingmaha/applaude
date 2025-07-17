@@ -5,4 +5,26 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@/components': path.resolve(__dirname, './src/components'),
+      '@/pages': path.resolve(__dirname, './src/pages'),
+      '@/store': path.resolve(__dirname, './src/store'),
+      '@/services': path.resolve(__dirname, './src/services'),
+      '@/assets': path.resolve(__dirname, './src/assets'),
+      '@/styles': path.resolve(__dirname, './src/styles'),
+    }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return id.toString().split('node_modules/')[1].split('/')[0].toString();
+          }
+        }
+      }
+    }
+  }
 })
