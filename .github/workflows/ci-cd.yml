@@ -17,7 +17,7 @@ env:
   EB_PROD_ENV_NAME: applaude-prod-env
 
 jobs:
-  lint-and-test:
+  backend-ci:
     name: Lint, Test & Security Scan
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +74,7 @@ jobs:
   build-and-push-to-ecr:
     name: Build and Push to ECR
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: backend-ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
       image_tag: ${{ steps.build-image.outputs.image_tag }}
@@ -103,8 +103,8 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-  deploy-production:
-    name: Deploy to Production
+  deploy-backend-production:
+    name: Deploy Backend to Production
     runs-on: ubuntu-latest
     needs: build-and-push-to-ecr
     environment: production
@@ -154,10 +154,50 @@ jobs:
           region: ${{ env.AWS_REGION }}
           deployment_package: deploy.zip
 
-      - name: Deploy Frontend to Vercel Production
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ env.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ env.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod --cwd ./frontend'
+  frontend-preview:
+    name: Deploy Frontend to Vercel Preview
+    runs-on: ubuntu-latest
+    needs: backend-ci
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./frontend
+
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }} --build-env VITE_API_BASE_URL=${{ secrets.STAGING_BACKEND_URL }}
+        working-directory: ./frontend
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./frontend
+
+  frontend-deploy:
+    name: Deploy Frontend to Vercel Production
+    runs-on: ubuntu-latest
+    needs: deploy-backend-production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./frontend
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }} --build-env VITE_API_BASE_URL=${{ secrets.PRODUCTION_BACKEND_URL }}
+        working-directory: ./frontend
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./frontend
