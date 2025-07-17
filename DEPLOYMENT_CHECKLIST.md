@@ -1,77 +1,47 @@
-# Applaude Platform - Final Launch Deployment Checklist
+# Production Deployment Checklist
 
-**Operator:** _________________________
-**Date:** _________________________
-**Time (UTC):** _________________________
+This checklist must be completed before every production deployment to ensure a smooth and secure launch.
 
-This checklist is the definitive guide for the final deployment of the "Applaude" platform. Follow each step meticulously. Do not proceed to the next step until the current one is successfully completed and verified.
+## 1. Pre-Deployment
 
----
+-   [ ] **Code Review & Merge:** All code has been peer-reviewed and merged into the `main` branch.
+-   [ ] **Automated Tests Pass:** The CI/CD pipeline on GitHub Actions has passed all linting, testing, and security scans for the `main` branch commit.
+-   [ ] **Secrets & Environment Variables Confirmed:**
+    -   [ ] **AWS Secrets Manager:** All required secrets (`DJANGO_SECRET_KEY`, `DB_PASSWORD`, etc.) are correctly configured in the `applaude/production` secret.
+    -   [ ] **Vercel Environment Variables:** All variables listed in `/frontend/.env.example` (like `VITE_API_BASE_URL` and `VITE_SENTRY_DSN`) are set correctly in the Vercel project's "Production" environment.
+-   [ ] **Database Migration Review:** Any new database migrations have been reviewed and tested in a staging environment. The CI/CD pipeline will apply them automatically, but they must be correct.
+-   [ ] **Manual DR Snapshot (Optional but Recommended):** For major releases, manually trigger an AWS RDS snapshot before deployment for an extra layer of protection.
 
-### **Phase 1: Pre-Deployment Readiness**
+## 2. Deployment
 
-* [ ] **Confirm Final Code Freeze:** Verify that the `main` branch is frozen and no new commits will be merged until after launch.
-* [ ] **AWS Console Login:** Log in to the AWS Management Console with administrator privileges.
-* [ ] **Vercel CLI Login:** Ensure you are logged into the Vercel CLI (`vercel login`).
-* [ ] **GitHub Secrets Configuration:**
-    * Navigate to the GitHub repository's `Settings > Secrets and variables > Actions`.
-    * Verify the following secrets are correctly configured and have not expired:
-        * `AWS_ACCESS_KEY_ID`: For deploying to Elastic Beanstalk.
-        * `AWS_SECRET_ACCESS_KEY`: For deploying to Elastic Beanstalk.
-        * `S3_BUCKET_NAME`: For static file storage.
-        * `VERCEL_ORG_ID`: For Vercel frontend deployment.
-        * `VERCEL_PROJECT_ID`: For Vercel frontend deployment.
-        * `SNYK_TOKEN`: For the dependency and license scan job.
-* [ ] **AWS Resource Health Check:**
-    * **RDS:** Navigate to the RDS dashboard. Confirm the production database instance is `Available` and that automated backups are enabled.
-    * **ElastiCache:** Navigate to the ElastiCache dashboard. Confirm the Redis cluster for Celery is `Available`.
-    * **Elastic Beanstalk:** Navigate to the Elastic Beanstalk dashboard. Confirm the production environment is `Ready` and healthy.
+-   [ ] **Trigger Deployment:** The deployment is automatically triggered by a push to the `main` branch. Monitor the `deploy-production` job in the GitHub Actions workflow.
+-   [ ] **Monitor Backend Deployment:**
+    -   Check the AWS Elastic Beanstalk console for the `applaude-prod-env`.
+    -   Verify the environment updates successfully to the new version.
+    -   Monitor the environment's health status and logs for any errors post-deployment. The update should be seamless with zero downtime.
+-   [ ] **Monitor Frontend Deployment:**
+    -   Check the Vercel dashboard for the production deployment status.
+    -   Verify the deployment completes successfully.
 
----
+## 3. Post-Deployment Verification
 
-### **Phase 2: CI/CD Pipeline Execution**
+-   [ ] **Clear Browser Cache:** Perform a hard refresh (`Ctrl+Shift+R` or `Cmd+Shift+R`) to ensure you are loading the latest frontend assets.
+-   [ ] **Smoke Test Critical User Flows:**
+    -   [ ] **User Registration:** Create a new test account.
+    -   [ ] **User Login/Logout:** Log in and log out with an existing account.
+    -   [ ] **Core Feature (Project Creation):** Test the primary feature of the application.
+-   [ ] **Check Monitoring Dashboards:**
+    -   [ ] **Sentry:** Check for any new or unusual errors in both the frontend and backend projects.
+    -   [ ] **AWS CloudWatch:** Briefly check CPU Utilization and Response Time graphs for the Elastic Beanstalk environment and RDS instance to ensure they are within normal parameters.
+-   [ ] **Internal Communication:** Announce the successful deployment to the team.
 
-* [ ] **Merge to `main`:** Merge the final, approved pull request into the `main` branch. This will automatically trigger the `Applaude Production CI/CD` workflow in GitHub Actions.
-* [ ] **Monitor Pipeline Execution:**
-    * Navigate to the "Actions" tab in the GitHub repository.
-    * Monitor the progress of the workflow.
-    * **Critical:** Ensure all jobs, especially `security-and-license-scan`, complete successfully. If any job fails, **HALT** the deployment and escalate to the engineering lead immediately.
-* [ ] **Verify ECR Image Push:** Once the `build-and-push-to-ecr` job is complete, navigate to the Amazon ECR dashboard and confirm that a new image with the latest Git SHA tag has been pushed to the `applaude-backend` repository.
+## 4. In Case of Failure (Rollback Plan)
 
----
-
-### **Phase 3: Backend Deployment (Elastic Beanstalk)**
-
-* [ ] **Verify Elastic Beanstalk Deployment:** The `deploy-to-elastic-beanstalk` job in the CI/CD pipeline will automatically handle this.
-    * Monitor the Elastic Beanstalk environment in the AWS console. The status will change to `Updating`.
-    * Wait for the environment status to return to `Ready` and the health to be `Ok`.
-* [ ] **Smoke Test API:** Make a test request to a health check endpoint on the backend API (e.g., `https://<your-eb-url>/api/health/`) to confirm the new version is live and responsive.
-
----
-
-### **Phase 4: Frontend Deployment (Vercel)**
-
-* [ ] **Execute Vercel Deployment:** From the root of the local repository, run the following command to deploy the frontend to production:
-    ```bash
-    vercel --prod
-    ```
-* [ ] **Monitor Vercel Deployment:** Follow the output of the Vercel CLI. It will provide a URL to monitor the build and deployment status.
-* [ ] **Confirm Production URL:** Once deployment is complete, Vercel will assign the new build to the production domain (`applaude.ai`).
-
----
-
-### **Phase 5: Post-Launch Verification**
-
-* [ ] **Clear Caches:** Perform a hard refresh and clear the cache in your browser to ensure you are loading the latest version of the frontend.
-* [ ] **End-to-End Test:** Perform a full, end-to-end user journey test:
-    * Create a new account.
-    * Log in.
-    * Create a new project.
-    * Navigate through the application's core features.
-* [ ] **Monitor Production Logs:**
-    * Tail the logs in both Vercel (for the frontend) and AWS CloudWatch (for the backend).
-    * Watch for any unexpected errors or warnings.
-* [ ] **Final Sign-off:** Once all checks are complete and no critical issues are found, sign off on the launch.
-
-**Launch Status:** SUCCESSFUL / ROLLED BACK
-**Operator Signature:** _________________________
+-   **Backend (Elastic Beanstalk):**
+    1.  Navigate to the Elastic Beanstalk environment in the AWS Console.
+    2.  Go to "Application versions".
+    3.  Select the previous, known-good version and click "Deploy". This will immediately roll back the application code.
+-   **Frontend (Vercel):**
+    1.  Navigate to the project in the Vercel Dashboard.
+    2.  Go to the "Deployments" tab.
+    3.  Find the previous production deployment, click the "..." menu, and select "Promote to Production".
