@@ -1,46 +1,47 @@
-# --- Build Stage ---
-FROM python:3.11-slim as builder
+# --- Builder Stage ---
+FROM python:3.11-slim-bookworm as builder
 
 WORKDIR /usr/src/app
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends gcc default-libmysqlclient-dev
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    default-libmysqlclient-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
 COPY backend/requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+RUN pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels -r requirements.txt
+
 
 # --- Final Stage ---
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm as final
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SETTINGS_MODULE=applaude_api.settings.production
 
 WORKDIR /usr/src/app
 
-# Create a non-root user
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    default-mysql-client \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN addgroup --system app && adduser --system --group app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends default-libmysqlclient-dev && rm -rf /var/lib/apt/lists/*
-
-# Copy Python dependencies from builder
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install --no-cache /wheels/*
+RUN pip install --no-cache-dir /wheels/*
 
-# Copy application code
 COPY ./backend .
 
-# Change ownership
 RUN chown -R app:app /usr/src/app
 
-# Switch to non-root user
 USER app
 
-# Expose the port the app runs on
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "applaude_api.wsgi:application"]
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "applaude_api.wsgi:application"]
