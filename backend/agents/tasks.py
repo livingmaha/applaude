@@ -43,7 +43,7 @@ def get_ai_response(prompt, retries=3, delay=5):
     """
     if not model:
         raise ConnectionError("Generative AI model is not configured.")
-    
+
     for attempt in range(retries):
         try:
             response = model.generate_content(prompt)
@@ -69,7 +69,7 @@ def run_market_analysis(self, project_id):
     update_project_status(project_id, Project.ProjectStatus.ANALYSIS_PENDING, "Analyzing market and target user...")
     try:
         project = Project.objects.get(id=project_id)
-        
+
         # --- User Persona Generation ---
         persona_prompt = f"""
         Analyze the content from the URL: {project.source_url}.
@@ -83,7 +83,7 @@ def run_market_analysis(self, project_id):
         Format the output as a clean, readable text document.
         """
         user_persona = get_ai_response(persona_prompt)
-        
+
         # --- Brand Palette Generation ---
         palette_prompt = f"""
         Based on the website at {project.source_url}, generate a JSON object for a brand color palette.
@@ -93,7 +93,7 @@ def run_market_analysis(self, project_id):
         Return ONLY the raw JSON object.
         """
         brand_palette_str = get_ai_response(palette_prompt)
-        
+
         # Atomically update the project with the generated assets
         with transaction.atomic():
             project_to_update = Project.objects.select_for_update().get(id=project_id)
@@ -102,12 +102,12 @@ def run_market_analysis(self, project_id):
             project_to_update.status = Project.ProjectStatus.ANALYSIS_COMPLETE
             project_to_update.status_message = "Market analysis complete. Ready for design."
             project_to_update.save()
-            
+
         return project.id # Pass the project ID to the next task in the chain
     except Exception as e:
         update_project_status(project_id, Project.ProjectStatus.FAILED, f"Market Analysis Failed: {e}")
         self.retry(exc=e)
-        
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def run_code_generation(self, project_id):
     """
@@ -117,14 +117,14 @@ def run_code_generation(self, project_id):
     update_project_status(project_id, Project.ProjectStatus.CODE_GENERATION, "Generating application source code...")
     try:
         project = Project.objects.get(id=project_id)
-        
+
         # In a real system, this would involve a complex series of prompts
         # and interactions with a code-specialized AI model.
         # Here, we simulate the process and success.
-        
+
         # Simulate generation time
-        time.sleep(random.randint(20, 40)) 
-        
+        time.sleep(random.randint(20, 40))
+
         # Simulate storing the generated code and getting a path
         # This path would point to an S3 bucket or similar storage.
         generated_code_path = f"s3://applause-code-bucket/{project.owner.username}/{project.id}/source_code.zip"
@@ -153,10 +153,10 @@ def run_qa_check(self, project_id):
 
         # Simulate QA process (e.g., running static analysis, linting, tests)
         time.sleep(random.randint(15, 30))
-        
+
         # Simulate a successful QA outcome
         update_project_status(project_id, Project.ProjectStatus.QA_COMPLETE, "QA checks passed. Ready for deployment.")
-        
+
         return project.id # Pass ID to the next task
     except Exception as e:
         update_project_status(project_id, Project.ProjectStatus.FAILED, f"QA Check Failed: {e}")
@@ -178,10 +178,10 @@ def run_deployment(self, project_id):
 
         # Simulate deployment time
         time.sleep(random.randint(25, 50))
-        
+
         final_message = f"Deployment successful! Your app is now live on the {project.deployment_option} platform."
         update_project_status(project_id, Project.ProjectStatus.COMPLETED, final_message)
-        
+
         return project.id
     except Exception as e:
         update_project_status(project_id, Project.ProjectStatus.FAILED, f"Deployment Failed: {e}")
@@ -194,7 +194,9 @@ def send_testimonial_requests():
     for providing a testimonial and sends them a request.
     """
     now = timezone.now()
-    
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+
+
     # Define time windows for sending requests
     one_day_ago = now - timedelta(days=1)
     one_month_ago = now - timedelta(days=30)
@@ -206,7 +208,7 @@ def send_testimonial_requests():
         status=Project.ProjectStatus.COMPLETED,
         updated_at__range=(one_day_ago - timedelta(hours=24), one_day_ago)
     )
-    
+
     completed_one_month_ago = Project.objects.filter(
         status=Project.ProjectStatus.COMPLETED,
         updated_at__range=(one_month_ago - timedelta(hours=24), one_month_ago)
@@ -216,7 +218,7 @@ def send_testimonial_requests():
         status=Project.ProjectStatus.COMPLETED,
         updated_at__range=(three_months_ago - timedelta(hours=24), three_months_ago)
     )
-    
+
     projects_to_notify = list(completed_recently) + list(completed_one_month_ago) + list(completed_three_months_ago)
 
     for project in projects_to_notify:
@@ -226,7 +228,7 @@ def send_testimonial_requests():
         # if not Testimonial.objects.filter(user=user, project=project).exists():
 
         # For this implementation, we'll assume sending the email is sufficient.
-        
+
         subject = f"Share Your Experience with {project.name}"
         message = f"""
         Hi {user.username},
@@ -236,14 +238,14 @@ def send_testimonial_requests():
         Your feedback is incredibly valuable to us and to the Applause community. Would you be willing to share a short testimonial about your experience building with us?
 
         It will only take a moment, and you can submit it directly here:
-        http://localhost:5173/submit-testimonial/{project.id}
+        {frontend_url}/submit-testimonial/{project.id}
 
         Thank you for being a part of the Applause journey!
 
         Best,
         The Applause Team
         """
-        
+
         try:
             send_mail(
                 subject,
@@ -265,5 +267,3 @@ def cleanup_resources(*args, **kwargs):
     A cleanup function to be executed when the Celery worker shuts down.
     """
     print("Celery worker is shutting down. Performing cleanup...")
-
-
