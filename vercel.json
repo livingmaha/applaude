@@ -1,12 +1,9 @@
 {
     "rewrites": [
       {
-        "source": "/api/(.*)",
-        "destination": "https://your-backend-api-url.com/api/$1"
+        "source": "/api/:path*",
+        "destination": "https://applaude-backend.us-east-1.elasticbeanstalk.com/api/:path*"
       },
-      {
-        "source": "/(.*)",
-        "destination": "/index.html"
-      }
+      { "source": "/(.*)", "destination": "/index.html" }
     ]
 }
