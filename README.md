@@ -1,85 +1,105 @@
-# Applaude: AI-Powered Mobile App Generation
+# Applaude - AI-Powered App Generation Platform
 
-Applaude is a revolutionary platform that uses a swarm of specialized AI agents to build native mobile applications from a simple website URL or a text prompt.
+Applaude is a revolutionary platform that leverages generative AI to transform a simple URL into a fully functional, production-ready mobile application. Our vision is to empower creators, entrepreneurs, and businesses to launch their ideas instantly, without writing a single line of code.
 
 ## Tech Stack
 
-* **Backend:** Django, Django REST Framework, Celery, PostgreSQL
-* **Frontend:** React, Vite, TypeScript, Tailwind CSS, i18next
-* **Deployment:** AWS (for backend), Vercel (for frontend)
-* **CI/CD:** GitHub Actions
+- **Frontend:** React (Vite), TypeScript, Tailwind CSS, Zustand
+- **Backend:** Django, Django Rest Framework, Celery
+- **Database:** PostgreSQL
+- **AI:** Google's Gemini Pro
+- **Deployment:** Vercel (Frontend), AWS Elastic Beanstalk (Backend), AWS RDS (Database), AWS ElastiCache (Celery Broker)
 
----
+## Project Structure
 
-## Deployment Instructions
+.
+├── backend/         # Django REST Framework Backend
+├── frontend/        # React (Vite) Frontend
+├── docs/            # Project Documentation (ADRs, etc.)
+├── tests/           # E2E Tests
+└── .github/         # CI/CD Workflows
 
-### Frontend (Vercel)
 
-1.  **Fork and Clone:** Fork this repository and clone it to your local machine.
-2.  **Vercel Project:** Go to [Vercel](https://vercel.com), create a new project, and link it to your forked GitHub repository.
-3.  **Configuration:** Vercel will automatically detect the Vite project. No special build command is needed.
-4.  **Environment Variables:** In the Vercel project settings, add your backend API URL as `VITE_API_URL`.
-5.  **Deploy:** Vercel will automatically deploy new changes pushed to the `main` branch.
+## Getting Started
 
-### Backend & Database (AWS)
+### Prerequisites
 
-#### 1. AWS RDS for PostgreSQL
+- Node.js (v18 or later)
+- Python (v3.11 or later)
+- Docker & Docker Compose
+- AWS CLI (configured with credentials)
+- Vercel CLI (logged in)
 
-* In the AWS console, navigate to **RDS** and create a new **PostgreSQL** database.
-* Choose the "Free tier" template for development.
-* Set a master username and password.
-* **Crucially**, in the "Connectivity" section, make sure "Public access" is set to "Yes".
-* Once created, find the **endpoint** and **port** from the database details page.
+### Backend Setup
 
-#### 2. AWS Elastic Beanstalk Deployment
-
-* **Create `.ebextensions/django.config`:** In your `backend` directory, create a folder named `.ebextensions` and add a file `django.config` with the following content:
-    ```yaml
-    option_settings:
-      aws:elasticbeanstalk:container:python:
-        WSGIPath: applaude_api.wsgi:application
+1.  **Navigate to the backend directory:**
+    ```bash
+    cd backend
     ```
-* **Install EB CLI:** Follow the official AWS instructions to install the Elastic Beanstalk CLI.
-* **Initialize EB Project:**
-    * Navigate to your `backend` directory.
-    * Run `eb init -p python-3.11 applaude-backend`.
-    * Choose a region. You do not need to set up SSH.
-* **Create Environment:**
-    * Run `eb create applaude-prod-env`. This will take several minutes.
-* **Set Environment Variables:**
-    * Run `eb setenv SECRET_KEY='your-very-secret-key' DEBUG=False ALLOWED_HOSTS='.elasticbeanstalk.com,your-vercel-domain.app' DATABASE_URL='postgres://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME' PAYSTACK_SECRET_KEY='your-paystack-secret-key' GEMINI_API_KEY='your-gemini-key' CELERY_BROKER_URL='your-redis-url' CELERY_RESULT_BACKEND='your-redis-url'`
-    * Replace the placeholder values with your actual credentials from RDS and other services.
-* **Deploy:**
-    * Run `eb deploy`.
+2.  **Create and activate a virtual environment:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate # On Windows use `venv\Scripts\activate`
+    ```
+3.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  **Set up environment variables:**
+    Copy `.env.example` to `.env` and fill in the required values (Database URL, secret keys, etc.).
+    ```bash
+    cp .env.example .env
+    ```
+5.  **Run database migrations:**
+    ```bash
+    python manage.py migrate
+    ```
+6.  **Start the development server:**
+    ```bash
+    python manage.py runserver
+    ```
+
+### Frontend Setup
+
+1.  **Navigate to the frontend directory:**
+    ```bash
+    cd frontend
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Start the development server:**
+    ```bash
+    npm run dev
+    ```
+    The application will be available at `http://localhost:5173`.
 
 ---
 
+## Component Library (Storybook)
 
-## Disaster Recovery (DR) Strategy
+We use Storybook to document and develop our UI components in isolation.
 
-This section outlines the basic disaster recovery strategy for the Applaude platform.
+1.  **Navigate to the frontend directory:**
+    ```bash
+    cd frontend
+    ```
+2.  **Run Storybook:**
+    ```bash
+    npm run storybook
+    ```
+    Storybook will open in your browser, typically at `http://localhost:6006`.
 
-### Active-Passive Multi-Region AWS Setup
+## CI/CD
 
-For future implementation, an active-passive, multi-region AWS setup is recommended.
+Our CI/CD pipeline is managed by GitHub Actions and can be found in `.github/workflows/ci-cd.yml`. It includes:
 
-* **Active Region:** The primary AWS region where the entire infrastructure is running.
-* **Passive Region:** A secondary AWS region that serves as a backup.
+-   Linting and security scans for both frontend and backend.
+-   Automated deployments to Vercel (for frontend previews and production).
+-   Automated deployments to AWS Elastic Beanstalk (for backend production).
 
-#### Components:
+## Deployment
 
-* **Amazon Route 53:** For DNS failover.
-* **AWS Elastic Beanstalk:** For deploying the backend in both regions.
-* **Amazon RDS:** For the MySQL database, with cross-region read replicas.
-* **Amazon S3:** For static assets, with cross-region replication.
-* **Amazon ECR:** For Docker images, with cross-region replication.
-* **Amazon ElastiCache:** For Redis, with cross-region replication.
-* **AWS Secrets Manager:** For storing secrets, with cross-region replication.
-
-#### Failover Process:
-
-1.  In case of a failure in the active region, Route 53 will redirect traffic to the passive region.
-2.  The Elastic Beanstalk environment in the passive region will be promoted to become the new active environment.
-3.  The RDS read replica in the passive region will be promoted to become the new primary database.
-
-This strategy ensures high availability and minimal downtime in case of a regional outage.
+-   **Frontend:** The frontend is automatically deployed to Vercel on every push to the `main` branch.
+-   **Backend:** The backend is automatically deployed to AWS Elastic Beanstalk on every push to the `main` branch. The deployment process builds a Docker container, pushes it to ECR, and updates the Elastic Beanstalk environment.
