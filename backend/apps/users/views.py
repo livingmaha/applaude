@@ -5,6 +5,11 @@ from django.db import transaction
 from .models import CustomUser
 from .serializers import CustomUserSerializer
 from apps.tenants.models import Tenant, Domain
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import HttpResponse
+import csv
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -61,3 +66,37 @@ class RegisterView(generics.CreateAPIView):
 
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def export_user_data(request):
+    """
+    Exports all data for the authenticated user.
+    """
+    user = request.user
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="user_data_{user.id}.csv"'
+
+    writer = csv.writer(response)
+    # Write user data
+    writer.writerow(['User ID', 'Username', 'Email'])
+    writer.writerow([user.id, user.username, user.email])
+
+    # Write project data
+    writer.writerow([])
+    writer.writerow(['Project ID', 'Project Name', 'Created At'])
+    for project in user.projects.all():
+        writer.writerow([project.id, project.name, project.created_at])
+
+    return response
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_user_data(request):
+    """
+    Deletes the authenticated user's account and all associated data.
+    """
+    user = request.user
+    user.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
