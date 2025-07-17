@@ -2,9 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/main.css';
-import './i18n';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
+import { initSentry } from './services/sentry';
+
+// Initialize Sentry for production
+initSentry();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
