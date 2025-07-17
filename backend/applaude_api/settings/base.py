@@ -1,4 +1,3 @@
-# backend/applaude_api/settings/base.py
 import os
 from pathlib import Path
 from datetime import timedelta
