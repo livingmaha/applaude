@@ -2,35 +2,39 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-    }
+    },
+  },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
-    outDir: 'build',
+    outDir: 'dist',
+    sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-router-dom', 'react-dom'],
-          ...renderChunks(dependencies),
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@sentry')) {
+              return 'sentry';
+            }
+            return 'vendor';
+          }
         },
       },
     },
   },
 })
-
-const renderChunks = (deps: Record<string, string>) => {
-  const chunks: Record<string, string[]> = {};
-  Object.keys(deps).forEach((key) => {
-    if (['react', 'react-router-dom', 'react-dom'].includes(key)) return;
-    chunks[key] = [key];
-  });
-  return chunks;
-}
 
 const dependencies = {
   "react": "^18.2.0",
