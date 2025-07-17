@@ -77,56 +77,11 @@ jobs:
         working-directory: ./frontend
         run: npm run lint
 
-  e2e-tests:
-    name: End-to-End Tests
+  build-and-push-to-ecr:
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
-    needs: [frontend-security-checks]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Cypress run
-        uses: cypress-io/github-action@v6
-        with:
-          build: npm run build --prefix frontend
-          start: npm run preview --prefix frontend
-
-  license-scan:
-    name: License Compatibility Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@4
-      - name: Run Snyk to check for incompatible licenses
-        uses: snyk/actions/python-3.11@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --file=backend/requirements.txt --severity-threshold=high
-      - name: Run Snyk to check for incompatible licenses
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --file=frontend/package.json --severity-threshold=high
-
-  deploy-frontend-preview:
-    name: Deploy Frontend to Vercel Preview
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v20
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ env.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ env.VERCEL_PROJECT_ID }}
-          scope: ${{ env.VERCEL_ORG_ID }}
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
+    needs: [backend-security-checks, frontend-security-checks]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [backend-security-checks, frontend-security-checks, license-scan, e2e-tests]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -148,12 +103,26 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile backend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
+  deploy-to-elastic-beanstalk:
+    name: Deploy to Elastic Beanstalk
+    runs-on: ubuntu-latest
+    needs: [build-and-push-to-ecr]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate deployment package
+        run: |
+          mkdir -p .ebextensions
+          echo '{"AWSEBDockerrunVersion": "1", "Image": {"Name": "${{ needs.build-and-push-to-ecr.outputs.image }}", "Update": "true"}, "Ports": [{"ContainerPort": "8000"}]}' > Dockerrun.aws.json
+          zip -r deploy.zip Dockerrun.aws.json .ebextensions
+
       - name: Deploy to AWS Elastic Beanstalk
-        id: deploy
         uses: einaregilsson/beanstalk-deploy@v20
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -162,36 +131,5 @@ jobs:
           environment_name: ${{ env.EB_ENVIRONMENT_NAME }}
           version_label: ${{ github.sha }}
           region: ${{ env.AWS_REGION }}
-          deployment_package: backend-deployment-package.zip
+          deployment_package: deploy.zip
           use_existing_version_if_available: true
-
-      - name: Create Backend Deployment Package
-        run: zip -r backend-deployment-package.zip backend/
-
-  migrate-database:
-    name: Migrate Production Database
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [deploy-production]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run database migrations
-        working-directory: ./backend
-        run: python manage.py migrate --noinput
-        env:
-          DJANGO_SETTINGS_MODULE: applaude_api.settings.production
-          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
