@@ -1,24 +1,27 @@
 import multiprocessing
+import os
 
 # Server socket
-bind = "0.0.0.0:8000"
-workers = multiprocessing.cpu_count() * 2 + 1
+bind = os.environ.get('GUNICORN_BIND', '0.0.0.0:8000')
 
-# Worker class
-worker_class = "gevent"
-worker_connections = 1000
-threads = 4
+# Worker processes
+# A common formula is (2 * number of CPU cores) + 1
+workers = multiprocessing.cpu_count() * 2 + 1
+worker_class = 'gthread'
+threads = 4  # Number of threads per worker
 
 # Logging
-accesslog = "-"
-errorlog = "-"
-loglevel = "info"
-capture_output = True
+loglevel = os.environ.get('GUNICORN_LOGLEVEL', 'info')
+accesslog = '-'  # Log to stdout
+errorlog = '-'   # Log to stderr
 
 # Process naming
-proc_name = "applaude_api"
+proc_name = 'applaude_api'
 
-# Server mechanics
+# Timeouts
 timeout = 120
-keepalive = 5
-graceful_timeout = 30
+graceful_timeout = 90
+
+# Security: Avoid running as root
+user = 'applaude'
+group = 'applaude'
