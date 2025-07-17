@@ -1,9 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useAuthStore } from './stores/useAuth';
-import { useEffect } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Page Imports
 import LandingPage from './pages/LandingPage';
@@ -19,9 +18,13 @@ import BlogPostPage from './pages/BlogPostPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import NotFoundPage from './pages/NotFoundPage';
+import ApiPage from './pages/ApiPage';
 
 // Component Imports
-import PrivateRoute from './components/auth/PrivateRoute';
+import ProtectedRoute from './components/core/ProtectedRoute';
+import SuperuserRoute from './components/auth/SuperuserRoute';
+import BlogDashboard from './pages/admin/BlogDashboard';
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,66 +39,37 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { initializeAuth, isLoading, isAuthenticated } = useAuthStore();
-
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        {/* Replace with a branded loading spinner */}
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/blog/:id" element={<BlogPostPage />} />
-          <Route path="/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms" element={<TermsOfServicePage />} />
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:id" element={<BlogPostPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/api" element={<ApiPage />} />
 
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/create-project"
-            element={
-              <PrivateRoute>
-                <CreateProjectPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/project/:projectId"
-            element={
-              <PrivateRoute>
-                <ProjectDetailPage />
-              </PrivateRoute>
-            }
-          />
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/create-project" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
+            <Route path="/project/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
 
-          {/* Fallback Route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Router>
+            {/* Superuser/Admin Routes */}
+            <Route path="/admin/blog" element={<SuperuserRoute><BlogDashboard /></SuperuserRoute>} />
+
+
+            {/* Fallback Route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
       <Toaster richColors position="top-right" />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
