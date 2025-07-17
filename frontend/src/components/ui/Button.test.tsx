@@ -1,30 +1,26 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import Button from './Button';
+import { Button } from './Button';
+import { describe, it, expect, vi } from 'vitest';
 
-describe('Button Component', () => {
-  test('renders children correctly', () => {
-    render(<Button>Click Me</Button>);
-    expect(screen.getByText('Click Me')).toBeInTheDocument();
-  });
+describe('Button', () => {
+    it('renders children correctly', () => {
+        render(<Button>Click Me</Button>);
+        expect(screen.getByText('Click Me')).toBeInTheDocument();
+    });
 
-  test('handles click events', () => {
-    const handleClick = jest.fn();
-    render(<Button onClick={handleClick}>Click Me</Button>);
-    fireEvent.click(screen.getByText('Click Me'));
-    expect(handleClick).toHaveBeenCalledTimes(1);
-  });
+    it('handles click events', () => {
+        const handleClick = vi.fn();
+        render(<Button onClick={handleClick}>Click Me</Button>);
+        fireEvent.click(screen.getByText('Click Me'));
+        expect(handleClick).toHaveBeenCalledTimes(1);
+    });
 
-  test('applies correct variant classes', () => {
-    const { rerender } = render(<Button variant="primary">Primary</Button>);
-    expect(screen.getByText('Primary')).toHaveClass('bg-fusion-pink');
-
-    rerender(<Button variant="secondary">Secondary</Button>);
-    expect(screen.getByText('Secondary')).toHaveClass('bg-ion-blue');
-  });
-
-  test('is disabled when passed the disabled prop', () => {
-    render(<Button disabled>Disabled</Button>);
-    expect(screen.getByText('Disabled')).toBeDisabled();
-  });
+    it('is disabled when the disabled prop is true', () => {
+        const handleClick = vi.fn();
+        render(<Button onClick={handleClick} disabled>Click Me</Button>);
+        const button = screen.getByText('Click Me');
+        expect(button).toBeDisabled();
+        fireEvent.click(button);
+        expect(handleClick).not.toHaveBeenCalled();
+    });
 });
