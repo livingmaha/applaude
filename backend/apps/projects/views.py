@@ -1,15 +1,17 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.response import Response
+from rest_framework import viewsets, permissions
 from .models import Project, Testimonial, MobileApp
 from .serializers import ProjectSerializer, TestimonialSerializer, MobileAppSerializer
 
 class IsOwner(permissions.BasePermission):
     """
-    Custom permission to only allow owners of an object to edit or view it.
+    Custom permission to only allow owners of an object to interact with it.
     """
     def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request,
+        # so we'll always allow GET, HEAD or OPTIONS requests.
         if request.method in permissions.SAFE_METHODS:
             return True
+        # Write permissions are only allowed to the owner of the project.
         return obj.owner == request.user
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -23,10 +25,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         This view should return a list of all the projects
-        for the currently authenticated user.
+        for the currently authenticated user, prefetching related apps
+        to optimize database queries.
         """
         user = self.request.user
-        return Project.objects.filter(owner=user).prefetch_related('testimonials', 'apps')
+        return Project.objects.filter(owner=user).prefetch_related('apps', 'testimonials')
 
     def perform_create(self, serializer):
         """
@@ -35,10 +38,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
 
-class TestimonialViewSet(viewsets.ModelViewSet):
+class TestimonialViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API endpoint for testimonials.
-    Users can only access testimonials for projects they own.
+    API endpoint for testimonials. For this launch, it is read-only.
     """
     serializer_class = TestimonialSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -51,9 +53,10 @@ class TestimonialViewSet(viewsets.ModelViewSet):
         return Testimonial.objects.filter(project__owner=user).select_related('project')
 
 
-class MobileAppViewSet(viewsets.ModelViewSet):
+class MobileAppViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API endpoint for managing mobile app uploads.
+    API endpoint for viewing mobile app code snippets.
+    This is now read-only as creation is handled with the project.
     """
     serializer_class = MobileAppSerializer
     permission_classes = [permissions.IsAuthenticated]
