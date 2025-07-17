@@ -2,59 +2,99 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { useAuthStore } from './stores/useAuth';
+import { useEffect } from 'react';
 
+// Page Imports
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import { useAuthStore } from './stores/authStore';
+import SignUpPage from './pages/SignUpPage';
+import Dashboard from './pages/Dashboard';
+import CreateProjectPage from './pages/CreateProjectPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
+import AboutPage from './pages/AboutPage';
+import FAQPage from './pages/FAQPage';
+import BlogPage from './pages/BlogPage';
+import BlogPostPage from './pages/BlogPostPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import NotFoundPage from './pages/NotFoundPage';
 
-// Create a client
+// Component Imports
+import PrivateRoute from './components/auth/PrivateRoute';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
+      retry: (failureCount, error: any) => {
+        if (error.response?.status === 404) return false;
+        return failureCount < 2;
+      },
     },
   },
 });
 
 function App() {
-  const { accessToken } = useAuthStore();
+  const { initializeAuth, isLoading, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        {/* Replace with a branded loading spinner */}
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <main className="min-h-screen bg-background text-foreground">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:id" element={<BlogPostPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
 
-            {/* Redirect root to login or dashboard */}
-            <Route
-              path="/"
-              element={
-                accessToken ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
-              }
-            />
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-project"
+            element={
+              <PrivateRoute>
+                <CreateProjectPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/project/:projectId"
+            element={
+              <PrivateRoute>
+                <ProjectDetailPage />
+              </PrivateRoute>
+            }
+          />
 
-            {/* Protected Routes */}
-            <Route 
-              path="/dashboard/*" 
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } 
-            />
-
-            {/* Add other protected routes here */}
-            {/* <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} /> 
-            */}
-
-          </Routes>
-        </main>
+          {/* Fallback Route */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
       </Router>
       <Toaster richColors position="top-right" />
       <ReactQueryDevtools initialIsOpen={false} />
