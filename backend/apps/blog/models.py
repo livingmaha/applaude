@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import bleach
 
 class BlogPost(models.Model):
     title = models.CharField(max_length=255)
@@ -12,6 +13,10 @@ class BlogPost(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        self.content = bleach.clean(self.content)
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-created_at']
