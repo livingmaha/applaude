@@ -53,3 +53,33 @@ Applaude is a revolutionary platform that uses a swarm of specialized AI agents 
     * Run `eb deploy`.
 
 ---
+
+
+## Disaster Recovery (DR) Strategy
+
+This section outlines the basic disaster recovery strategy for the Applaude platform.
+
+### Active-Passive Multi-Region AWS Setup
+
+For future implementation, an active-passive, multi-region AWS setup is recommended.
+
+* **Active Region:** The primary AWS region where the entire infrastructure is running.
+* **Passive Region:** A secondary AWS region that serves as a backup.
+
+#### Components:
+
+* **Amazon Route 53:** For DNS failover.
+* **AWS Elastic Beanstalk:** For deploying the backend in both regions.
+* **Amazon RDS:** For the MySQL database, with cross-region read replicas.
+* **Amazon S3:** For static assets, with cross-region replication.
+* **Amazon ECR:** For Docker images, with cross-region replication.
+* **Amazon ElastiCache:** For Redis, with cross-region replication.
+* **AWS Secrets Manager:** For storing secrets, with cross-region replication.
+
+#### Failover Process:
+
+1.  In case of a failure in the active region, Route 53 will redirect traffic to the passive region.
+2.  The Elastic Beanstalk environment in the passive region will be promoted to become the new active environment.
+3.  The RDS read replica in the passive region will be promoted to become the new primary database.
+
+This strategy ensures high availability and minimal downtime in case of a regional outage.
