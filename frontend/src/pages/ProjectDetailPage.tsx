@@ -1,48 +1,43 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../api/axios';
-import { useAuth } from '../store/auth';
+import api from '../services/api'; // Corrected import path
+import { useAuthStore } from '../stores/useAuth'; // Corrected import path
 
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { Loader, AlertTriangle, ArrowLeft, FileQuestion } from 'lucide-react';
+import CodeBlock from '../components/ui/CodeBlock'; // Corrected import path
+
+interface MobileApp {
+    id: string;
+    platform: string;
+    highlighted_code: string;
+}
 
 interface ProjectDetails {
     id: string;
     name: string;
     source_url: string;
     created_at: string;
-    apps: any[]; // Define a proper type for MobileApp
-    testimonials: any[]; // Define a proper type for Testimonial
+    apps: MobileApp[];
+    testimonials: any[];
 }
 
-const fetchProjectDetails = async (token: string | null, projectId: string): Promise<ProjectDetails> => {
-    if (!token) {
-        throw new Error("Authentication token not found.");
-    }
-    try {
-        const { data } = await api.get(`/projects/${projectId}/`, {
-            headers: { Authorization: `Token ${token}` }
-        });
-        return data;
-    } catch (error: any) {
-        if (error.response && error.response.status === 404) {
-            // Specific, user-friendly error message
-            throw new Error("This project may have been deleted or you might not have permission to view it. Please check your dashboard or contact support if you believe this is an error.");
-        }
-        throw new Error("An unexpected error occurred while fetching project details.");
-    }
+const fetchProjectDetails = async (projectId: string): Promise<ProjectDetails> => {
+    const { data } = await api.get(`/projects/${projectId}/`);
+    return data;
 };
 
 
 const ProjectDetailPage = () => {
-    const { token } = useAuth();
     const { projectId } = useParams<{ projectId: string }>();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
 
     const { data: project, isLoading, isError, error } = useQuery<ProjectDetails, Error>({
         queryKey: ['projectDetails', projectId],
-        queryFn: () => fetchProjectDetails(token, projectId!),
-        enabled: !!token && !!projectId,
+        queryFn: () => fetchProjectDetails(projectId!),
+        enabled: isAuthenticated && !!projectId,
     });
 
     if (isLoading) {
@@ -52,7 +47,7 @@ const ProjectDetailPage = () => {
             </div>
         );
     }
-    
+
     if (isError) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -61,7 +56,7 @@ const ProjectDetailPage = () => {
                     <div className="text-center bg-white p-12 rounded-lg shadow-lg">
                         <FileQuestion className="mx-auto h-16 w-16 text-red-500 mb-4" />
                         <h2 className="text-2xl font-bold text-gray-800 mb-3">Project Not Found</h2>
-                        <p className="text-gray-600 mb-6 max-w-md">{error.message}</p>
+                        <p className="text-gray-600 mb-6 max-w-md">{error?.message || "An unexpected error occurred."}</p>
                         <Link
                             to="/dashboard"
                             className="inline-flex items-center px-6 py-3 font-semibold text-white bg-ion-blue rounded-lg hover:bg-blue-700 transition-all"
@@ -93,10 +88,18 @@ const ProjectDetailPage = () => {
                             </a>
                         </div>
 
-                        {/* TODO: Implement Tabbed Interface for Apps and Testimonials */}
                         <div className="bg-white p-8 rounded-lg shadow-md">
-                           <h2 className="text-2xl font-semibold mb-4">Manage Your App</h2>
-                           <p>App uploads and testimonial management coming soon!</p>
+                           <h2 className="text-2xl font-semibold mb-4">Generated Application Code</h2>
+                           {project.apps && project.apps.length > 0 ? (
+                               project.apps.map(app => (
+                                   <div key={app.id}>
+                                       <h3 className="text-xl font-semibold mt-6 mb-2">{app.platform} Code</h3>
+                                       <CodeBlock htmlContent={app.highlighted_code} />
+                                   </div>
+                               ))
+                           ) : (
+                               <p>No application code has been generated for this project yet.</p>
+                           )}
                         </div>
                     </>
                 )}
