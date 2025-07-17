@@ -6,9 +6,9 @@ bind = os.environ.get('GUNICORN_BIND', '0.0.0.0:8000')
 
 # Worker processes
 # A common formula is (2 * number of CPU cores) + 1
-workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = 'gthread'
-threads = 4  # Number of threads per worker
+workers = int(os.environ.get('GUNICORN_WORKERS', multiprocessing.cpu_count() * 2 + 1))
+worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'gthread')
+threads = int(os.environ.get('GUNICORN_THREADS', '4'))
 
 # Logging
 loglevel = os.environ.get('GUNICORN_LOGLEVEL', 'info')
@@ -19,9 +19,13 @@ errorlog = '-'   # Log to stderr
 proc_name = 'applaude_api'
 
 # Timeouts
-timeout = 120
-graceful_timeout = 90
+timeout = int(os.environ.get('GUNICORN_TIMEOUT', 120))
+graceful_timeout = int(os.environ.get('GUNICORN_GRACEFUL_TIMEOUT', 90))
 
-# Security: Avoid running as root
-user = 'applaude'
-group = 'applaude'
+# Security: Set user and group if running as root
+if os.geteuid() == 0:
+    user = os.environ.get('GUNICORN_USER', 'applaude')
+    group = os.environ.get('GUNICORN_GROUP', 'applaude')
+
+# For running behind a proxy like NGINX or an AWS ELB
+forwarded_allow_ips = '*'
