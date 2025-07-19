@@ -1,4 +1,15 @@
 {
   "version": 2,
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/vite"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
