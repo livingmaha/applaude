@@ -1,61 +1,54 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import apiClient from '../services/api';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import { BlogPost } from '../types';
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/services/api';
+import { BlogPost } from '@/types';
+import { Loader2, AlertCircle } from 'lucide-react';
 
-const BlogPostPage = () => {
+const getBlogPost = async (id: string): Promise<BlogPost> => {
+    const { data } = await apiClient.get(`/blog/posts/${id}/`);
+    return data;
+};
+
+const BlogPostPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const [post, setPost] = useState<BlogPost | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchPost = async () => {
-            try {
-                const response = await apiClient.get(`/blog/${id}/`);
-                setPost(response.data);
-            } catch (err) {
-                setError('Blog post not found.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const { data: post, isLoading, isError, error } = useQuery<BlogPost, Error>({
+        queryKey: ['blogPost', id],
+        queryFn: () => getBlogPost(id!),
+        enabled: !!id,
+    });
 
-        if (id) {
-            fetchPost();
-        }
-    }, [id]);
-
-    if (loading) {
-        return <div className="min-h-screen bg-white flex items-center justify-center">Loading post...</div>;
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loader2 className="h-16 w-16 animate-spin text-ion-blue" />
+            </div>
+        );
     }
 
-    if (error || !post) {
-        return <div className="min-h-screen bg-white flex items-center justify-center text-red-500">{error}</div>;
+    if (isError) {
+        return (
+            <div className="container mx-auto p-4 text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                <h2 className="mt-4 text-xl font-semibold text-red-600">Error loading post</h2>
+                <p className="text-red-500">{error?.message || 'The post could not be found or an error occurred.'}</p>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-white text-black">
-            <Header />
-            <main className="py-24 px-4 sm:px-6 lg:px-8">
-                <article className="max-w-4xl mx-auto">
-                    <Link to="/blog" className="text-ion-blue hover:underline mb-8 inline-block">&larr; Back to Blog</Link>
-                    <h1 className="text-4xl md:text-6xl font-bold text-black mb-4">{post.title}</h1>
-                    <div className="text-gray-500 mb-8">
-                        <span>By {post.author?.username || 'Applause Team'}</span>
-                        <span className="mx-2">&bull;</span>
-                        <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                    </div>
-                    {post.main_image_url && (
-                        <img src={post.main_image_url} alt={post.title} className="w-full h-auto max-h-96 object-cover rounded-lg mb-8" />
-                    )}
-                    <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, '<br />') }} />
-                </article>
-            </main>
-            <Footer />
+        <div className="container mx-auto max-w-4xl p-4 md:p-8">
+            <article className="prose lg:prose-xl">
+                <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">{post?.title}</h1>
+                <p className="text-lg text-gray-500">
+                    By {post?.author?.username || 'Applaude Team'} on {new Date(post?.created_at || Date.now()).toLocaleDateString()}
+                </p>
+                {post?.main_image_url && (
+                    <img src={post.main_image_url} alt={post.title} className="w-full rounded-lg my-8" />
+                )}
+                <div dangerouslySetInnerHTML={{ __html: post?.content || '' }} />
+            </article>
         </div>
     );
 };
