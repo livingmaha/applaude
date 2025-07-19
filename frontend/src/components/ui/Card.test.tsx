@@ -1,25 +1,26 @@
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import Card from './Card';
+import { describe, test, expect } from 'vitest';
+import { Card, CardHeader, CardTitle, CardContent } from './Card';
 
 describe('Card Component', () => {
   test('renders children correctly', () => {
-    const childText = 'Hello, Card!';
     render(
       <Card>
-        <p>{childText}</p>
+        <CardHeader>
+          <CardTitle>Test Title</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Test content</p>
+        </CardContent>
       </Card>
     );
-    
-    const childElement = screen.getByText(childText);
-    expect(childElement).toBeInTheDocument();
+    expect(screen.getByText('Test Title')).toBeInTheDocument();
+    expect(screen.getByText('Test content')).toBeInTheDocument();
   });
 
   test('applies custom className', () => {
-    const customClass = 'my-custom-class';
-    const { container } = render(<Card className={customClass} />);
-    
-    // Check if the first child of the container (the card div) has the custom class
-    expect(container.firstChild).toHaveClass(customClass);
+    render(<Card className="custom-class">Content</Card>);
+    const cardElement = screen.getByText('Content').parentElement;
+    expect(cardElement).toHaveClass('custom-class');
   });
 });
