@@ -3,7 +3,12 @@ import flagsmith from 'flagsmith';
 // Initialize Flagsmith
 flagsmith.init({
     environmentID: import.meta.env.VITE_FLAGSMITH_ENVIRONMENT_ID,
-    onChange: (oldFlags, params) => { // TSLint: flagsmith's types are any here
+    onChange: (oldFlags, params) => {
+        // Ensure oldFlags is not null before proceeding
+        if (!oldFlags) {
+            return;
+        }
+
         const { isFromServer } = params;
 
         // Check for changes
@@ -18,4 +23,4 @@ flagsmith.init({
     }
 });
 
-export default flagsmith;
+export { flagsmith };
