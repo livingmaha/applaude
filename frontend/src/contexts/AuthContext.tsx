@@ -1,6 +1,6 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import apiClient from '../services/api';
-import paymentService from '../services/paymentService';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import { apiClient } from '../services/api';
+import { paymentService } from '../services/paymentService';
 
 interface Message {
     text: string;
@@ -21,11 +21,11 @@ interface PaymentConversation {
 
 interface AuthContextType {
     token: string | null;
-    user: { email: string; userId: number; username?: string } | null;
+    user: { email: string; userId: number; username?: string, is_premium_subscribed?: boolean } | null;
     isAuthenticated: boolean;
     isSubscribed: boolean;
     login: (email: string, password: string) => Promise<void>;
-    signup: (username: string, email: string, password: string) => Promise<void>; // Added signup
+    signup: (username: string, email: string, password: string) => Promise<void>;
     logout: () => void;
     isPaymentModalOpen: boolean;
     openPaymentConversation: (projectId: number) => void;
@@ -51,7 +51,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [token, setToken] = useState<string | null>(null);
-    const [user, setUser] = useState<{ email: string; userId: number; username?: string, is_superuser?: boolean, is_premium_subscribed?: boolean } | null>(null);
+    const [user, setUser] = useState<{ email: string; userId: number; username?: string; is_premium_subscribed?: boolean } | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -68,7 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (authToken) {
             setToken(authToken);
             apiClient.defaults.headers.common['Authorization'] = `Token ${authToken}`;
-            // Fetch user data after setting up token
             apiClient.get('/users/me/').then(response => {
                 const { email, id, username, is_premium_subscribed } = response.data;
                 const userData = { email, userId: id, username, is_premium_subscribed };
@@ -77,7 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setIsSubscribed(is_premium_subscribed || false);
             }).catch(err => {
                 console.error("Failed to fetch user data", err);
-                logout(); // Logout if token is invalid
+                logout();
             });
         }
     };
@@ -95,7 +94,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     setIsAuthenticated(true);
                 })
                 .catch(() => {
-                    // Token is invalid, clear it
                     localStorage.removeItem('token');
                     setIsAuthenticated(false);
                 });
@@ -166,7 +164,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             ...prev,
             messages: [...prev.messages, { sender: 'user', text: userMessageText }],
             input: '',
-            interactiveOptions: [], // Clear options after user makes a choice
+            interactiveOptions: [],
         }));
 
         if (payload && payload.plan && paymentConversation.projectId) {
