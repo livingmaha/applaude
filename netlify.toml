@@ -1,0 +1,20 @@
+# FILE: netlify.toml
+
+# This section tells Netlify how to build your site
+[build]
+  # Your build command (this should match your package.json script)
+  command = "npm run build"
+  
+  # The directory that contains the built site (Vite outputs to 'dist')
+  publish = "dist"
+  
+  # The environment where your build command should be run
+  environment = { NODE_VERSION = "18" }
+
+# This section is crucial for single-page applications like React
+# It ensures that all page requests are handled by your index.html
+# so that React Router can take over client-side routing.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
