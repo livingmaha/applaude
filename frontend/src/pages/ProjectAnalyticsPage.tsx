@@ -1,119 +1,75 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import apiClient from '../services/api';
+import React, { useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/services/api';
+import { Project } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { AuthContext } from '../contexts/AuthContext';
-import { ChevronDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Loader2, AlertCircle } from 'lucide-react';
 
-
-interface Project {
-  id: number;
-  name: string;
-}
-
-
-const AnalyticsChatAgent = () => (
-    <div className="mt-8">
-        <h3 className="text-xl font-bold mb-4">Applause Prime Analytics</h3>
-        <div className="bg-gray-100 p-4 rounded-lg">
-            <p className="text-sm text-gray-700">"Your active users are up 15% this week! This is likely due to your recent marketing campaign. Keep up the great work."</p>
-        </div>
-    </div>
-);
-
-const ProjectSelector: React.FC<{ currentProjectId: string; userProjects: Project[] }> = ({ currentProjectId, userProjects }) => {
-    const navigate = useNavigate();
-
-    const handleProjectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newProjectId = event.target.value;
-        navigate(`/projects/${newProjectId}/analytics`);
-    };
-
-    return (
-        <div className="relative">
-            <select
-                value={currentProjectId}
-                onChange={handleProjectChange}
-                className="appearance-none p-2 pr-8 border border-gray-300 rounded-md bg-white text-black font-bold focus:outline-none focus:ring-2 focus:ring-ion-blue"
-            >
-                {userProjects.map(project => (
-                    <option key={project.id} value={project.id}>
-                        {project.name}
-                    </option>
-                ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-black pointer-events-none" />
-        </div>
-    );
+const getProjects = async (): Promise<Project[]> => {
+    const { data } = await apiClient.get('/projects/');
+    return data;
 };
 
+// Mock analytics data
+const mockAnalyticsData = [
+  { name: 'Jan', uv: 4000, pv: 2400 },
+  { name: 'Feb', uv: 3000, pv: 1398 },
+  { name: 'Mar', uv: 2000, pv: 9800 },
+  { name: 'Apr', uv: 2780, pv: 3908 },
+  { name: 'May', uv: 1890, pv: 4800 },
+  { name: 'Jun', uv: 2390, pv: 3800 },
+];
 
-const ProjectAnalyticsPage = () => {
-    const { id } = useParams<{ id: string }>();
-    const [data, setData] = useState([]);
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [loading, setLoading] = useState(true);
-    const authContext = useContext(AuthContext);
+const ProjectAnalyticsPage: React.FC = () => {
+    const { id: currentProjectId } = useParams<{ id: string }>();
 
-    useEffect(() => {
-        const fetchAnalyticsAndProjects = async () => {
-            if (!id || !authContext?.user) return;
-            setLoading(true);
-            try {
-                // Fetch analytics for the current project
-                const analyticsResponse = await apiClient.get(`/analytics/${id}/`);
-                setData(analyticsResponse.data);
+    const { data: userProjects, isLoading, isError, error } = useQuery<Project[], Error>({
+        queryKey: ['projects'],
+        queryFn: getProjects
+    });
 
-                // Fetch all projects for the user to populate the dropdown
-                const projectsResponse = await apiClient.get('/projects/');
-                setProjects(projectsResponse.data);
+    const currentProject = useMemo(() => {
+        return userProjects?.find(p => p.id === currentProjectId);
+    }, [userProjects, currentProjectId]);
 
-            } catch (error) {
-                console.error("Failed to fetch data", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>;
+    }
 
-        fetchAnalyticsAndProjects();
-    }, [id, authContext?.user]);
-
-    const handleDownloadPdf = () => {
-        // PDF generation logic would go here
-        alert('Downloading PDF report...');
-    };
-
-    if (loading) return <div>Loading analytics...</div>;
-
-    const currentProjectName = projects.find(p => p.id === parseInt(id || ''))?.name || 'Project';
+    if (isError) {
+        return (
+            <div className="text-center p-8">
+                <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                <h2 className="mt-4 text-xl font-semibold text-red-600">Failed to load analytics</h2>
+                <p className="text-red-500">{error.message}</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold">Analytics: {currentProjectName}</h1>
-                {projects.length > 1 && id && (
-                    <ProjectSelector currentProjectId={id} userProjects={projects} />
-                )}
-            </div>
+        <div className="container mx-auto p-4 md:p-8">
+            <h1 className="text-3xl font-bold mb-6">Analytics for {currentProject?.name || 'Project'}</h1>
+            
             <Card>
-                <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="active_users" fill="#00E5FF" />
-                        <Bar dataKey="downloads" fill="#FF007A" />
-                    </BarChart>
-                </ResponsiveContainer>
-                <div className="mt-4 flex justify-end">
-                    <Button onClick={handleDownloadPdf}>Download as PDF</Button>
-                </div>
+                <CardHeader>
+                    <CardTitle>Usage Analytics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={mockAnalyticsData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="pv" fill="#8884d8" name="Page Views" />
+                            <Bar dataKey="uv" fill="#82ca9d" name="Unique Visitors" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
             </Card>
-            <AnalyticsChatAgent />
         </div>
     );
 };
