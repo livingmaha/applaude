@@ -1,6 +1,6 @@
 import React from 'react';
 import { Apple, Smartphone, Zap } from 'lucide-react';
-import Card from '../ui/Card';
+import { Card } from '@/components/ui/Card';
 
 interface DeploymentModalProps {
     isOpen: boolean;
@@ -8,7 +8,7 @@ interface DeploymentModalProps {
     onDeployClick: () => void;
 }
 
-const DeploymentModal: React.FC<DeploymentModalProps> = ({ isOpen, onClose, onDeployClick }) => {
+export const DeploymentModal: React.FC<DeploymentModalProps> = ({ isOpen, onClose, onDeployClick }) => {
     if (!isOpen) return null;
 
     return (
@@ -35,5 +35,3 @@ const DeploymentModal: React.FC<DeploymentModalProps> = ({ isOpen, onClose, onDe
         </div>
     );
 };
-
-export default DeploymentModal;
