@@ -1,45 +1,30 @@
-import axios from 'axios';
-import { useAuthStore } from '@/stores/useAuth';
+import axiosInstance from '@/lib/axios';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-  withCredentials: true,
-});
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+}
 
-api.interceptors.request.use(
-  (config) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+export const getProjects = async (): Promise<Project[]> => {
+  try {
+    const response = await axiosInstance.get('/projects/');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch projects:', error);
+    throw error;
   }
-);
+};
 
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        const refreshToken = useAuthStore.getState().refreshToken;
-        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/token/refresh/`, { refresh: refreshToken });
-        const { access } = response.data;
-        useAuthStore.getState().setTokens(access, refreshToken);
-        api.defaults.headers.common['Authorization'] = 'Bearer ' + access;
-        return api(originalRequest);
-      } catch (refreshError) {
-        useAuthStore.getState().logout();
-        return Promise.reject(refreshError);
-      }
-    }
-    return Promise.reject(error);
+export const createProject = async (projectData: {
+  name: string;
+  description: string;
+}): Promise<Project> => {
+  try {
+    const response = await axiosInstance.post('/projects/', projectData);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create project:', error);
+    throw error;
   }
-);
-
-
-export default api;
+};
