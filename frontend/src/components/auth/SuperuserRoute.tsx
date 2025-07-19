@@ -1,16 +1,30 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '@/stores/useAuth';
+import { Loader2 } from 'lucide-react';
 
-const SuperuserRoute = ({ children }: { children: JSX.Element }) => {
-  const auth = useAuth();
+interface SuperuserRouteProps {
+    children: React.ReactElement;
+}
 
-  if (!auth.isAuthenticated) {
-    return <Navigate to="/login" />;
+const SuperuserRoute: React.FC<SuperuserRouteProps> = ({ children }) => {
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-ion-blue" />
+        </div>
+    );
   }
 
-  if (!auth.user?.is_superuser) {
-    // Redirect to dashboard or a 'not authorized' page if not a superuser
-    return <Navigate to="/dashboard" />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (!user?.is_superuser) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
