@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import apiClient from '@/services/api';
+import { apiClient } from '@/services/api';
 import { User } from '@/types';
 
 interface AuthState {
@@ -44,12 +44,13 @@ export const useAuthStore = create(
       initializeAuth: async () => {
         const { accessToken } = get();
         if (accessToken) {
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
           try {
-            const { data } = await apiClient.get('/api/v1/users/profile/');
+            const { data } = await apiClient.get<User>('/users/profile/');
             set({ user: data, isAuthenticated: true, isLoading: false });
           } catch (error) {
-            console.error("Failed to initialize auth", error);
-            get().logout();
+            console.error("Failed to initialize auth, token might be expired.", error);
+            get().logout(); // Clears invalid tokens
           }
         } else {
           set({ isLoading: false });
@@ -57,16 +58,8 @@ export const useAuthStore = create(
       },
     }),
     {
-      name: 'auth-storage', // unique name
-      storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
-      onRehydrate: (state) => {
-        if (state.accessToken) {
-            apiClient.defaults.headers.common['Authorization'] = `Bearer ${state.accessToken}`;
-        }
-      }
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );
-
-// Initialize auth state on application load
-useAuthStore.getState().initializeAuth();
