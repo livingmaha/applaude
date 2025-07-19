@@ -1,110 +1,78 @@
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import api from '../services/api'; // Corrected import path
-import { useAuthStore } from '../stores/useAuth'; // Corrected import path
+import { apiClient } from '@/services/api';
+import { Project } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import { Loader, AlertTriangle, ArrowLeft, FileQuestion } from 'lucide-react';
-import CodeBlock from '../components/ui/CodeBlock'; // Corrected import path
-
-interface MobileApp {
-    id: string;
-    platform: string;
-    highlighted_code: string;
-}
-
-interface ProjectDetails {
-    id: string;
-    name: string;
-    source_url: string;
-    created_at: string;
-    apps: MobileApp[];
-    testimonials: any[];
-}
-
-const fetchProjectDetails = async (projectId: string): Promise<ProjectDetails> => {
-    const { data } = await api.get(`/projects/${projectId}/`);
+const getProject = async (id: string): Promise<Project> => {
+    const { data } = await apiClient.get(`/projects/${id}/`);
     return data;
 };
 
 
-const ProjectDetailPage = () => {
-    const { projectId } = useParams<{ projectId: string }>();
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+const ProjectDetailPage: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
 
-
-    const { data: project, isLoading, isError, error } = useQuery<ProjectDetails, Error>({
-        queryKey: ['projectDetails', projectId],
-        queryFn: () => fetchProjectDetails(projectId!),
-        enabled: isAuthenticated && !!projectId,
+    const { data: project, isLoading, isError, error } = useQuery<Project, Error>({
+        queryKey: ['project', id],
+        queryFn: () => getProject(id!),
+        enabled: !!id,
     });
 
     if (isLoading) {
         return (
-            <div className="flex h-screen items-center justify-center">
-                <Loader className="animate-spin h-12 w-12 text-ion-blue" />
+            <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-16 w-16 animate-spin text-ion-blue" />
             </div>
         );
     }
 
     if (isError) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Header />
-                <main className="flex-grow container mx-auto px-6 py-12 flex items-center justify-center">
-                    <div className="text-center bg-white p-12 rounded-lg shadow-lg">
-                        <FileQuestion className="mx-auto h-16 w-16 text-red-500 mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-800 mb-3">Project Not Found</h2>
-                        <p className="text-gray-600 mb-6 max-w-md">{error?.message || "An unexpected error occurred."}</p>
-                        <Link
-                            to="/dashboard"
-                            className="inline-flex items-center px-6 py-3 font-semibold text-white bg-ion-blue rounded-lg hover:bg-blue-700 transition-all"
-                        >
-                            <ArrowLeft className="mr-2 h-5 w-5" />
-                            Return to Dashboard
-                        </Link>
-                    </div>
-                </main>
-                <Footer />
+            <div className="container mx-auto p-4 text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                <h2 className="mt-4 text-xl font-semibold text-red-600">
+                    Error loading project
+                </h2>
+                <p className="text-red-500">{error.message}</p>
             </div>
         );
     }
-
+    
+    if (!project) {
+        return <div className="text-center p-8">Project not found.</div>;
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Header />
-            <main className="flex-grow container mx-auto px-6 py-12">
-                {project && (
-                    <>
-                        <div className="mb-8">
-                            <Link to="/dashboard" className="text-ion-blue hover:underline flex items-center mb-4">
-                               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-                            </Link>
-                            <h1 className="text-4xl font-bold text-gray-800">{project.name}</h1>
-                            <a href={project.source_url} target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-fusion-pink">
-                                {project.source_url}
-                            </a>
+        <div className="container mx-auto p-4 md:p-8">
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle className="text-3xl">{project.name}</CardTitle>
+                        <div className="flex space-x-2">
+                           <Button asChild variant="outline">
+                               <Link to={`/project/${project.id}/analytics`}>View Analytics</Link>
+                           </Button>
+                            <Button asChild>
+                                <Link to={`/project/${project.id}/preview`}>Preview App</Link>
+                            </Button>
                         </div>
-
-                        <div className="bg-white p-8 rounded-lg shadow-md">
-                           <h2 className="text-2xl font-semibold mb-4">Generated Application Code</h2>
-                           {project.apps && project.apps.length > 0 ? (
-                               project.apps.map(app => (
-                                   <div key={app.id}>
-                                       <h3 className="text-xl font-semibold mt-6 mb-2">{app.platform} Code</h3>
-                                       <CodeBlock htmlContent={app.highlighted_code} />
-                                   </div>
-                               ))
-                           ) : (
-                               <p>No application code has been generated for this project yet.</p>
-                           )}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-lg text-gray-600 mb-4"><strong>Source URL:</strong> {project.source_url}</p>
+                    <p className="text-lg text-gray-600 mb-4"><strong>Status:</strong> <span className="font-semibold">{project.status}</span></p>
+                    {project.status_message && (
+                        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4" role="alert">
+                            <p className="font-bold">Status Message</p>
+                            <p>{project.status_message}</p>
                         </div>
-                    </>
-                )}
-            </main>
-            <Footer />
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 };
