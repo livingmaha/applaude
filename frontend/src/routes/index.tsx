@@ -1,35 +1,34 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ProtectedRoute } from '@/components/auth/PrivateRoute';
-import { SuperuserRoute } from '@/components/auth/SuperuserRoute';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import PrivateRoute from '@/components/common/PrivateRoute';
+import SuperuserRoute from '@/components/auth/SuperuserRoute';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 import { Loader2 } from 'lucide-react';
 
-// Lazily load page components for better performance
-const LandingPage = lazy(() => import('@/pages/LandingPage').then(module => ({ default: module.LandingPage })));
-const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(module => ({ default: module.LoginPage })));
-const SignUpPage = lazy(() => import('@/pages/auth/SignUpPage').then(module => ({ default: module.SignUpPage })));
-const Dashboard = lazy(() => import('@/pages/Dashboard').then(module => ({ default: module.Dashboard })));
-const ProjectDetailPage = lazy(() => import('@/pages/ProjectDetailPage').then(module => ({ default: module.ProjectDetailPage })));
-const CreateProjectPage = lazy(() => import('@/pages/CreateProjectPage').then(module => ({ default: module.CreateProjectPage })));
-const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
-const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(module => ({ default: module.NotFoundPage })));
-const BlogDashboard = lazy(() => import('@/pages/admin/BlogDashboard').then(module => ({ default: module.BlogDashboard })));
-const AboutPage = lazy(() => import('@/pages/AboutPage').then(module => ({ default: module.AboutPage })));
-const ApiPage = lazy(() => import('@/pages/ApiPage').then(module => ({ default: module.ApiPage })));
-const BlogPage = lazy(() => import('@/pages/BlogPage').then(module => ({ default: module.BlogPage })));
-const BlogPostPage = lazy(() => import('@/pages/BlogPostPage').then(module => ({ default: module.BlogPostPage })));
-const DataPrivacyPage = lazy(() => import('@/pages/DataPrivacyPage').then(module => ({ default: module.DataPrivacyPage })));
-const FAQPage = lazy(() => import('@/pages/FAQPage').then(module => ({ default: module.FAQPage })));
-const PreviewPage = lazy(() => import('@/pages/PreviewPage').then(module => ({ default: module.PreviewPage })));
-const ProjectAnalyticsPage = lazy(() => import('@/pages/ProjectAnalyticsPage').then(module => ({ default: module.ProjectAnalyticsPage })));
-const SupportPage = lazy(() => import('@/pages/SupportPage').then(module => ({ default: module.SupportPage })));
-const TermsOfServicePage = lazy(() => import('@/pages/TermsOfServicePage').then(module => ({ default: module.TermsOfServicePage })));
-const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage').then(module => ({ default: module.PrivacyPolicyPage })));
-const SubmitTestimonialPage = lazy(() => import('@/components/core/SubmitTestimonialPage').then(module => ({ default: module.SubmitTestimonialPage })));
-const UpgradeSubscriptionPage = lazy(() => import('@/pages/UpgradeSubscriptionPage').then(module => ({ default: module.UpgradeSubscriptionPage })));
-
+// Correctly lazy-load components that use `export default`
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
+const SignUpPage = lazy(() => import('@/pages/auth/SignUpPage'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const ProjectDetailPage = lazy(() => import('@/pages/ProjectDetailPage'));
+const CreateProjectPage = lazy(() => import('@/pages/CreateProjectPage'));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
+const BlogDashboard = lazy(() => import('@/pages/admin/BlogDashboard'));
+const AboutPage = lazy(() => import('@/pages/AboutPage'));
+const ApiPage = lazy(() => import('@/pages/ApiPage'));
+const BlogPage = lazy(() => import('@/pages/BlogPage'));
+const BlogPostPage = lazy(() => import('@/pages/BlogPostPage'));
+const DataPrivacyPage = lazy(() => import('@/pages/DataPrivacyPage'));
+const FAQPage = lazy(() => import('@/pages/FAQPage'));
+const PreviewPage = lazy(() => import('@/pages/PreviewPage'));
+const ProjectAnalyticsPage = lazy(() => import('@/pages/ProjectAnalyticsPage'));
+const SupportPage = lazy(() => import('@/pages/SupportPage'));
+const TermsOfServicePage = lazy(() => import('@/pages/TermsOfServicePage'));
+const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage'));
+const SubmitTestimonialPage = lazy(() => import('@/components/core/SubmitTestimonialPage'));
+const UpgradeSubscriptionPage = lazy(() => import('@/pages/UpgradeSubscriptionPage'));
 
 // Fallback component for Suspense
 const PageLoader = () => (
@@ -46,6 +45,7 @@ export const AppRoutes = () => {
         <main className="flex-grow">
           <Suspense fallback={<PageLoader />}>
             <Routes>
+              {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
@@ -61,13 +61,13 @@ export const AppRoutes = () => {
               <Route path="/upgrade" element={<UpgradeSubscriptionPage />} />
 
               {/* Protected Routes */}
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/project/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
-              <Route path="/project/:id/preview" element={<ProtectedRoute><PreviewPage /></ProtectedRoute>} />
-              <Route path="/project/:id/analytics" element={<ProtectedRoute><ProjectAnalyticsPage /></ProtectedRoute>} />
-              <Route path="/create-project" element={<ProtectedRoute><CreateProjectPage /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="/submit-testimonial/:projectId" element={<ProtectedRoute><SubmitTestimonialPage /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/project/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
+              <Route path="/project/:id/preview" element={<PrivateRoute><PreviewPage /></PrivateRoute>} />
+              <Route path="/project/:id/analytics" element={<PrivateRoute><ProjectAnalyticsPage /></PrivateRoute>} />
+              <Route path="/create-project" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
+              <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+              <Route path="/submit-testimonial/:projectId" element={<PrivateRoute><SubmitTestimonialPage /></PrivateRoute>} />
 
               {/* Admin Routes */}
               <Route path="/admin/blog" element={<SuperuserRoute><BlogDashboard /></SuperuserRoute>} />
