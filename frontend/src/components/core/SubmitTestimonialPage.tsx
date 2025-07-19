@@ -1,64 +1,88 @@
-import { useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
+import { apiClient } from '@/services/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/textarea';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
-import apiClient from '../services/api';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
 
-const SubmitTestimonialPage = () => {
+const formSchema = z.object({
+  content: z.string().min(10, {
+    message: "Testimonial must be at least 10 characters long.",
+  }),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+interface SubmitPayload extends FormData {
+    projectId: string;
+}
+
+const submitTestimonial = async ({ projectId, content }: SubmitPayload) => {
+    const { data } = await apiClient.post(`/projects/${projectId}/testimonials/`, { content });
+    return data;
+};
+
+const SubmitTestimonialPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
-    const [content, setContent] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!content.trim()) {
-            toast.error("Please write your testimonial before submitting.");
-            return;
+    
+    const mutation = useMutation({
+        mutationFn: submitTestimonial,
+        onSuccess: () => {
+            toast.success("Thank you for your feedback!");
+            navigate(`/project/${projectId}`);
+        },
+        onError: (error) => {
+            toast.error(`Submission failed: ${error.message}`);
         }
-        setLoading(true);
-        try {
-            await apiClient.post('/testimonials/create/', {
-                project: projectId,
-                content: content,
-            });
-            toast.success("Thank you for your feedback! Your testimonial has been submitted for review.");
-            navigate('/dashboard');
-        } catch (error: any) {
-            toast.error(error.response?.data?.detail || "Failed to submit testimonial. Please try again.");
-            console.error("Testimonial submission error:", error);
-        } finally {
-            setLoading(false);
+    });
+
+    const form = useForm<FormData>({
+        resolver: zodResolver(formSchema),
+        defaultValues: { content: "" },
+    });
+
+    const onSubmit = (data: FormData) => {
+        if (projectId) {
+            mutation.mutate({ ...data, projectId });
         }
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-100">
-            <Header />
-            <main className="flex-grow container mx-auto p-8 flex items-center justify-center">
-                <Card className="w-full max-w-2xl p-8">
-                    <h1 className="text-3xl font-bold text-center mb-4">Share Your Experience</h1>
-                    <p className="text-center text-gray-600 mb-8">Your story helps other creators like you. Tell us about your journey with Applause.</p>
-                    <form onSubmit={handleSubmit}>
-                        <textarea
-                            rows={8}
-                            className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ion-blue focus:outline-none"
-                            placeholder="I was amazed by how quickly..."
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                        />
-                        <div className="mt-6 flex justify-center">
-                            <Button type="submit" disabled={loading}>
-                                {loading ? "Submitting..." : "Submit Testimonial"}
+        <div className="container mx-auto flex justify-center items-center p-4">
+            <Card className="w-full max-w-lg">
+                <CardHeader>
+                    <CardTitle>Submit a Testimonial</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="content"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Your Feedback</FormLabel>
+                                        <FormControl>
+                                            <Textarea placeholder="Tell us what you think..." rows={5} {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" disabled={mutation.isPending}>
+                                {mutation.isPending ? "Submitting..." : "Submit Testimonial"}
                             </Button>
-                        </div>
-                    </form>
-                </Card>
-            </main>
-            <Footer />
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
         </div>
     );
 };
