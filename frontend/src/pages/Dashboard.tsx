@@ -1,17 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
-import { getProjects } from '@/services/api';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { apiClient } from '@/services/api';
+import { Project } from '@/types';
+
+const getProjects = async (): Promise<Project[]> => {
+    const { data } = await apiClient.get('/projects/');
+    return data;
+};
 
 const Dashboard = () => {
-  const { data: projects, isLoading, isError, error } = useQuery({
+  const { data: projects, isLoading, isError, error } = useQuery<Project[], Error>({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 md:p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Your Projects</h1>
         <Button asChild>
@@ -33,7 +39,7 @@ const Dashboard = () => {
 
       {isError && (
         <div className="text-red-500 text-center p-4 bg-red-100 rounded-lg">
-          <p>Error loading projects: {error instanceof Error ? error.message : 'An unknown error occurred'}</p>
+          <p>Error loading projects: {error.message}</p>
         </div>
       )}
 
@@ -43,9 +49,9 @@ const Dashboard = () => {
             projects.map((project) => (
               <div key={project.id} className="p-6 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="text-xl font-semibold mb-2">{project.name}</h2>
-                <p className="text-gray-600 mb-4">{project.description}</p>
+                <p className="text-gray-600 mb-4">{project.source_url}</p>
                 <Button variant="outline" asChild>
-                  <Link to={`/project/${project.id}`}>View Details</Link>
+                  <Link to={`/project/${project.id}/preview`}>View Details</Link>
                 </Button>
               </div>
             ))
