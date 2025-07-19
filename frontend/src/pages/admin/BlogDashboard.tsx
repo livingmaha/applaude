@@ -1,142 +1,126 @@
-import { useState, useEffect } from 'react';
-import apiClient from '../../services/api';
-import { BlogPost } from '../../types';
-import Card from '../../components/ui/Card';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/services/api';
+import { BlogPost } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const BlogDashboard = () => {
-    const [posts, setPosts] = useState<BlogPost[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null);
+const getBlogPosts = async (): Promise<BlogPost[]> => {
+    const { data } = await apiClient.get('/blog/posts/');
+    return data;
+};
 
-    useEffect(() => {
-        fetchPosts();
-    }, []);
+const createBlogPost = async (postData: Partial<BlogPost>): Promise<BlogPost> => {
+    const { data } = await apiClient.post('/blog/posts/', postData);
+    return data;
+};
 
-    const fetchPosts = async () => {
-        setLoading(true);
-        try {
-            const response = await apiClient.get('/blog/');
-            setPosts(response.data);
-        } catch (error) {
-            console.error("Failed to fetch posts:", error);
-        } finally {
-            setLoading(false);
+const updateBlogPost = async (postData: Partial<BlogPost> & { id: number }): Promise<BlogPost> => {
+    const { id, ...payload } = postData;
+    const { data } = await apiClient.put(`/blog/posts/${id}/`, payload);
+    return data;
+};
+
+const BlogDashboard: React.FC = () => {
+    const queryClient = useQueryClient();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentPost, setCurrentPost] = useState<Partial<BlogPost> | null>(null);
+
+    const { data: posts, isLoading } = useQuery<BlogPost[], Error>({
+        queryKey: ['blogPosts'],
+        queryFn: getBlogPosts,
+    });
+
+    const mutation = useMutation({
+        mutationFn: (postData: Partial<BlogPost>) => 
+            currentPost?.id ? updateBlogPost({ ...postData, id: currentPost.id }) : createBlogPost(postData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
+            toast.success(`Blog post ${currentPost?.id ? 'updated' : 'created'} successfully!`);
+            setIsModalOpen(false);
+            setCurrentPost(null);
+        },
+        onError: (error) => {
+            toast.error(`Failed to ${currentPost?.id ? 'update' : 'create'} blog post: ${error.message}`);
         }
+    });
+
+    const handleOpenModal = (post: Partial<BlogPost> | null = null) => {
+        setCurrentPost(post || { title: '', content: '', is_published: false });
+        setIsModalOpen(true);
     };
 
-    const handleEdit = (post: BlogPost) => {
-        setEditingPost(post);
-    };
-
-    const handleNewPost = () => {
-        setEditingPost({ title: '', content: '', is_published: false });
-    };
-
-    const handleDelete = async (id: number) => {
-        if (window.confirm('Are you sure you want to delete this post?')) {
-            try {
-                await apiClient.delete(`/blog/${id}/`);
-                fetchPosts();
-            } catch (error) {
-                console.error("Failed to delete post:", error);
-                alert('Failed to delete post.');
-            }
-        }
-    };
-
-    const handleSave = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!editingPost) return;
-
-        const isNew = !editingPost.id;
-        const url = isNew ? '/blog/' : `/blog/${editingPost.id}/`;
-        const method = isNew ? 'post' : 'put';
-
-        try {
-            await apiClient[method](url, editingPost);
-            setEditingPost(null);
-            fetchPosts();
-        } catch (error) {
-            console.error("Failed to save post:", error);
-            alert('Failed to save post.');
+        if (currentPost) {
+            mutation.mutate(currentPost);
         }
     };
-
-    if (loading) return <div>Loading...</div>;
+    
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setCurrentPost(prev => prev ? { ...prev, [name]: value } : null);
+    };
 
     return (
-        <div className="p-8 text-black">
-            <h1 className="text-3xl font-bold mb-6">Blog Management</h1>
+        <div className="container mx-auto p-4 md:p-8">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold">Blog Management</h1>
+                <Button onClick={() => handleOpenModal()}>Create New Post</Button>
+            </div>
+            
+            {isLoading && <Loader2 className="mx-auto h-12 w-12 animate-spin" />}
 
-            {editingPost ? (
-                <Card className="p-6 mb-8 bg-white">
-                    <form onSubmit={handleSave}>
-                        <h2 className="text-2xl font-bold mb-4">{editingPost.id ? 'Edit Post' : 'Create New Post'}</h2>
-                        <div className="space-y-4">
-                            <Input
-                                type="text"
-                                placeholder="Post Title"
-                                value={editingPost.title || ''}
-                                onChange={e => setEditingPost({ ...editingPost, title: e.target.value })}
-                                required
-                            />
-                            <textarea
-                                placeholder="Post Content (HTML allowed)"
-                                rows={10}
-                                className="w-full bg-gray-100 text-black p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-ion-blue"
-                                value={editingPost.content || ''}
-                                onChange={e => setEditingPost({ ...editingPost, content: e.target.value })}
-                                required
-                            />
-                            <Input
-                                type="url"
-                                placeholder="Main Image URL"
-                                value={editingPost.main_image_url || ''}
-                                onChange={e => setEditingPost({ ...editingPost, main_image_url: e.target.value })}
-                            />
-                             <div className="flex items-center gap-4">
-                                <label className="flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="form-checkbox h-5 w-5 text-fusion-pink bg-gray-200 border-gray-300 rounded focus:ring-fusion-pink"
-                                        checked={editingPost.is_published}
-                                        onChange={e => setEditingPost({ ...editingPost, is_published: e.target.checked })}
-                                    />
-                                    <span className="ml-2">Published</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-4 mt-6">
-                            <Button type="button" onClick={() => setEditingPost(null)} variant="secondary">Cancel</Button>
-                            <Button type="submit">Save Post</Button>
-                        </div>
-                    </form>
-                </Card>
-            ) : (
-                <Button onClick={handleNewPost} className="mb-8">
-                    <Plus size={20} className="mr-2"/> New Post
-                </Button>
-            )}
-
-            <div className="space-y-4">
-                {posts.map(post => (
-                    <Card key={post.id} className="p-4 flex justify-between items-center bg-white">
-                        <div>
-                            <h3 className="font-bold text-lg">{post.title}</h3>
-                            <p className={`text-sm ${post.is_published ? 'text-green-500' : 'text-yellow-500'}`}>
-                                {post.is_published ? 'Published' : 'Draft'}
-                            </p>
-                        </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => handleEdit(post)} className="p-2 hover:text-ion-blue"><Edit size={20} /></button>
-                            <button onClick={() => handleDelete(post.id)} className="p-2 hover:text-red-500"><Trash2 size={20} /></button>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {posts?.map(post => (
+                    <Card key={post.id}>
+                        <CardHeader>
+                            <CardTitle>{post.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="mb-4">Status: {post.is_published ? 'Published' : 'Draft'}</p>
+                            <Button variant="outline" onClick={() => handleOpenModal(post)}>Edit</Button>
+                        </CardContent>
                     </Card>
                 ))}
             </div>
+
+            {isModalOpen && currentPost && (
+                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                    <Card className="w-full max-w-2xl">
+                         <CardHeader>
+                            <CardTitle>{currentPost.id ? 'Edit' : 'Create'} Blog Post</CardTitle>
+                         </CardHeader>
+                         <CardContent>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title</label>
+                                    <Input id="title" name="title" value={currentPost.title} onChange={handleChange} required />
+                                </div>
+                                <div>
+                                    <label htmlFor="content" className="block text-sm font-medium text-gray-700">Content</label>
+                                    <Textarea id="content" name="content" value={currentPost.content} onChange={handleChange} rows={10} required />
+                                </div>
+                                <div className="flex items-center">
+                                    <input type="checkbox" id="is_published" name="is_published" checked={currentPost.is_published} 
+                                        onChange={(e) => setCurrentPost(p => p ? {...p, is_published: e.target.checked} : null)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
+                                    <label htmlFor="is_published" className="ml-2 block text-sm text-gray-900">Publish</label>
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                    <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                                    <Button type="submit" disabled={mutation.isPending}>
+                                        {mutation.isPending ? 'Saving...' : 'Save Post'}
+                                    </Button>
+                                </div>
+                            </form>
+                         </CardContent>
+                    </Card>
+                 </div>
+            )}
         </div>
     );
 };
