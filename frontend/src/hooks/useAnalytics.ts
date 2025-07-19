@@ -1,41 +1,45 @@
+import { useEffect } from 'react';
+import mixpanel from 'mixpanel-browser';
 
-import { useState } from 'react';
+const MIXPANEL_TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN;
 
-interface AnalyticsResult {
-    keyMetrics: {
-        totalUsers?: number;
-        monthlyActive?: number;
-        topCountry?: string;
-    };
-    // In a real scenario, this would contain rich, processed data
+if (MIXPANEL_TOKEN) {
+  mixpanel.init(MIXPANEL_TOKEN, {
+    debug: import.meta.env.DEV,
+    track_pageview: true,
+  });
 }
 
+type EventProperties = Record<string, any>;
+
 export const useAnalytics = () => {
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const trackEvent = (eventName: string, properties?: EventProperties) => {
+    if (MIXPANEL_TOKEN) {
+      mixpanel.track(eventName, properties);
+    } else {
+      console.log(`Analytics (dev): ${eventName}`, properties || '');
+    }
+  };
 
-    const processAnalyticsFile = async (fileOrUrl: File | string): Promise<AnalyticsResult> => {
-        setIsProcessing(true);
-        setError(null);
-        
-        console.log("Starting analytics processing for:", fileOrUrl);
+  const identifyUser = (userId: string, properties?: EventProperties) => {
+    if (MIXPANEL_TOKEN) {
+      mixpanel.identify(userId);
+      if (properties) {
+        mixpanel.people.set(properties);
+      }
+    } else {
+      console.log(`Analytics (dev): Identify ${userId}`, properties || '');
+    }
+  };
 
-        // This is a simulation. In a real-world application, you would
-        // parse the file (e.g., using a library like Papaparse for CSV)
-        // or fetch the URL and process the data.
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate network/processing delay
+  return { trackEvent, identifyUser };
+};
 
-        setIsProcessing(false);
-
-        // Return mock data
-        return {
-            keyMetrics: {
-                totalUsers: 15000,
-                monthlyActive: 3200,
-                topCountry: 'Nigeria',
-            }
-        };
-    };
-
-    return { isProcessing, error, processAnalyticsFile };
+// Hook to track page views
+export const usePageTracking = (pathname: string) => {
+    useEffect(() => {
+        if (MIXPANEL_TOKEN) {
+            mixpanel.track('Page View', { path: pathname });
+        }
+    }, [pathname]);
 };
