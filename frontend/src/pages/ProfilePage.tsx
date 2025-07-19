@@ -1,9 +1,9 @@
-import { useContext, useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import Card from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
 import { User, Mail, ShieldCheck } from 'lucide-react';
 
-const ProfilePage = () => {
+export const ProfilePage = () => {
     const authContext = useContext(AuthContext);
     if (!authContext) throw new Error("ProfilePage must be within an AuthProvider");
 
@@ -56,5 +56,3 @@ const ProfilePage = () => {
         </div>
     );
 };
-
-export default ProfilePage;
