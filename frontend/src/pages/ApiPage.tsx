@@ -1,126 +1,67 @@
-import React, { useState } from 'react';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import Card from '../components/ui/Card';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import apiClient from '../services/api'; 
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import CodeBlock from '@/components/ui/CodeBlock';
+import { Button } from '@/components/ui/Button';
+import { useAuthStore } from '@/stores/useAuth';
+import { toast } from 'sonner';
 
-const ApiPage = () => {
-    const [businessName, setBusinessName] = useState('');
-    const [websiteLink, setWebsiteLink] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+const ApiPage: React.FC = () => {
+    const { user } = useAuthStore();
+    const apiKey = user ? "your-api-key-here" : "log-in-to-get-your-api-key"; // Placeholder
 
-    const handleApiKeyRequest = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        try {
-            // The endpoint is /api/v1/initialize-payment/ as per the backend routing
-            const response = await apiClient.post('/v1/initialize-payment/', {
-                business_name: businessName,
-                website_link: websiteLink,
-                email: email,
-                password: password,
-            });
-
-            // Redirect to Paystack for payment completion
-            window.location.href = response.data.authorization_url;
-
-        } catch (err: any) {
-            if (err.response) {
-                setError(JSON.stringify(err.response.data));
-            } else {
-                setError('An unexpected error occurred. Please try again.');
-            }
-        } finally {
-            setLoading(false);
-        }
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success("Copied to clipboard!");
     };
 
+    const pythonCode = `import requests
+
+api_key = "${apiKey}"
+headers = {"Authorization": f"Bearer {api_key}"}
+response = requests.get("https://api.applaude.com/v1/projects", headers=headers)
+
+print(response.json())`;
+
+    const jsCode = `const apiKey = "${apiKey}";
+const headers = { "Authorization": \`Bearer \${apiKey}\` };
+fetch("https://api.applaude.com/v1/projects", { headers })
+  .then(response => response.json())
+  .then(data => console.log(data));`;
+
     return (
-        <div className="min-h-screen bg-quantum-black text-soft-white">
-            <Header />
-            <main className="pt-32 pb-16 px-8 max-w-5xl mx-auto">
-                <section className="text-center mb-16 animate-fade-in">
-                    <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-ion-blue to-fusion-pink">
-                        Build with Applause: The Partner API
-                    </h1>
-                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                        Easily integrate Applause into your platform and empower your users to create mobile apps with a single API call.
-                    </p>
-                </section>
+        <div className="container mx-auto p-4 md:p-8">
+            <h1 className="text-4xl font-bold mb-6 text-center">Applaude API</h1>
+            <p className="text-lg text-gray-600 text-center mb-10">
+                Integrate your applications with our powerful API to automate your workflow.
+            </p>
 
-                <section className="mb-16">
-                    <h2 className="text-4xl font-bold text-center mb-8">How It Works</h2>
-                    <div className="grid md:grid-cols-3 gap-8 text-center">
-                        <Card className="p-6">
-                            <h3 className="text-2xl font-bold mb-2">1. Sign Up</h3>
-                            <p className="text-gray-400">Provide your business details and get ready to connect.</p>
-                        </Card>
-                        <Card className="p-6">
-                            <h3 className="text-2xl font-bold mb-2">2. Get API Key</h3>
-                            <p className="text-gray-400">After a one-time setup fee, your unique API key is activated.</p>
-                        </Card>
-                        <Card className="p-6">
-                            <h3 className="text-2xl font-bold mb-2">3. Make API Call</h3>
-                            <p className="text-gray-400">Start creating apps for your users instantly.</p>
-                        </Card>
-                    </div>
-                </section>
+            <Card className="mb-8">
+                <CardHeader>
+                    <CardTitle>Your API Key</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between">
+                    <code className="text-sm bg-gray-100 p-2 rounded">{apiKey}</code>
+                    <Button variant="outline" onClick={() => handleCopy(apiKey)}>Copy Key</Button>
+                </CardContent>
+            </Card>
 
-                <section className="mb-16">
-                    <h2 className="text-4xl font-bold text-center mb-8">Endpoint Documentation</h2>
-                    <Card className="p-8 font-mono text-sm">
-                        <h3 className="text-xl font-bold text-solar-orange mb-2">Create Project</h3>
-                        <p className="mb-4"><span className="font-bold text-ion-blue">POST</span> /api/v1/projects/create/</p>
+            <Card className="mb-8">
+                <CardHeader>
+                    <CardTitle>Example: Fetch Projects (Python)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <CodeBlock htmlContent={pythonCode} />
+                </CardContent>
+            </Card>
 
-                        <h4 className="font-bold mb-2">Authentication</h4>
-                        <p className="mb-4">Include your API Key in the request header.</p>
-                        <pre className="bg-gray-800 p-4 rounded-lg mb-4"><code>X-API-Key: &lt;YOUR_API_KEY&gt;</code></pre>
-
-                        <h4 className="font-bold mb-2">Request Body</h4>
-                        <pre className="bg-gray-800 p-4 rounded-lg mb-4"><code>
-{`{
-    "source_url": "https://example-customer.com",
-    "app_type": "ANDROID"
-}`}
-                        </code></pre>
-
-                        <h4 className="font-bold mb-2">Success Response (201 Created)</h4>
-                        <pre className="bg-gray-800 p-4 rounded-lg"><code>
-{`{
-    "id": 123,
-    "name": "App for example-customer.com",
-    "status": "ANALYSIS_PENDING",
-    ...
-}`}
-                        </code></pre>
-                    </Card>
-                </section>
-
-                <section id="get-api-key">
-                    <h2 className="text-4xl font-bold text-center mb-8">Get Your API Key</h2>
-                     <Card className="max-w-xl mx-auto p-8">
-                         <form onSubmit={handleApiKeyRequest} className="space-y-6">
-                            <p className="text-center text-lg">The API has a one-time setup fee of $99.</p>
-                             <Input type="text" placeholder="Business Name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required />
-                             <Input type="url" placeholder="https://your-business.com" value={websiteLink} onChange={(e) => setWebsiteLink(e.target.value)} required />
-                             <Input type="email" placeholder="Contact Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                             <Input type="password" placeholder="Create Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                             {error && <p className="text-solar-orange text-sm text-center">{error}</p>}
-                             <Button type="submit" variant="primary" className="w-full" disabled={loading}>
-                                 {loading ? 'Processing...' : 'Proceed to Payment'}
-                             </Button>
-                         </form>
-                     </Card>
-                </section>
-            </main>
-            <Footer />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Example: Fetch Projects (JavaScript)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <CodeBlock htmlContent={jsCode} />
+                </CardContent>
+            </Card>
         </div>
     );
 };
