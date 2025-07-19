@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import AppRoutes from '@/routes';
+import { AppRoutes } from '@/routes';
 import { Toaster } from 'sonner';
 
 const queryClient = new QueryClient();
 
-function App() {
+export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppRoutes />
@@ -14,5 +14,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;
