@@ -1,69 +1,61 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import apiClient from '../services/api';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import Card from '../components/ui/Card';
-import { BlogPost } from '../types';
+import { apiClient } from '@/services/api';
+import { BlogPost } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
 
-const BlogPage = () => {
-    const [posts, setPosts] = useState<BlogPost[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+const getPublishedBlogPosts = async (): Promise<BlogPost[]> => {
+    const { data } = await apiClient.get('/blog/posts/?published=true');
+    return data;
+};
 
-    useEffect(() => {
-        const fetchPosts = async () => {
-            try {
-                const response = await apiClient.get('/blog/');
-                setPosts(response.data);
-            } catch (err) {
-                setError('Failed to load blog posts.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPosts();
-    }, []);
-
-    if (loading) {
-        return <div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>;
-    }
-
-    if (error) {
-        return <div className="min-h-screen bg-white flex items-center justify-center text-red-500">{error}</div>;
-    }
+const BlogPage: React.FC = () => {
+    const { data: posts, isLoading, isError } = useQuery<BlogPost[], Error>({
+        queryKey: ['publishedBlogPosts'],
+        queryFn: getPublishedBlogPosts,
+    });
 
     return (
-        <div className="min-h-screen bg-white text-black">
-            <Header />
-            <main className="py-24 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-6xl mx-auto">
-                    <h1 className="text-4xl md:text-5xl font-bold text-center mb-12">
-                        The Applaude Blog
-                    </h1>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {posts.map(post => (
-                            <Link to={`/blog/${post.id}`} key={post.id}>
-                                <Card className="overflow-hidden h-full flex flex-col group transform hover:-translate-y-2 transition-transform duration-300">
-                                    <img src={post.main_image_url || 'https://via.placeholder.com/400x200'} alt={post.title} className="w-full h-48 object-cover" />
-                                    <div className="p-6 flex-grow flex flex-col">
-                                        <h2 className="text-2xl font-bold text-black mb-2 group-hover:text-ion-blue transition-colors">{post.title}</h2>
-                                        <p className="text-gray-600 line-clamp-3 flex-grow">{post.content}</p>
-                                        <div className="mt-4 text-sm text-gray-500">
-                                            <span>By {post.author?.username || 'Applaude Team'}</span>
-                                            <span className="mx-2">&bull;</span>
-                                            <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </Link>
-                        ))}
-                    </div>
+        <div className="container mx-auto p-4 md:p-8">
+            <h1 className="text-4xl font-bold mb-8 text-center">Our Blog</h1>
+            
+            {isLoading && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <Card key={i}>
+                            <Skeleton className="h-48 w-full" />
+                            <CardHeader>
+                                <Skeleton className="h-8 w-3/4 mb-2" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </CardHeader>
+                        </Card>
+                    ))}
                 </div>
-            </main>
-            <Footer />
+            )}
+
+            {isError && (
+                <p className="text-center text-red-500">Failed to load blog posts. Please try again later.</p>
+            )}
+
+            {!isLoading && !isError && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {posts?.map(post => (
+                        <Link to={`/blog/${post.id}`} key={post.id} className="block hover:shadow-lg transition-shadow rounded-lg">
+                            <Card className="h-full">
+                                {post.main_image_url && <img src={post.main_image_url} alt={post.title} className="w-full h-48 object-cover rounded-t-lg" />}
+                                <CardHeader>
+                                    <CardTitle>{post.title}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-gray-500">By {post.author?.username || 'Applaude Team'} on {new Date(post.created_at).toLocaleDateString()}</p>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
