@@ -1,82 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import apiClient from '../../services/api';
-import TestimonialCard from './TestimonialCard';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/services/api';
+import { Testimonial } from '@/types';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Loader2, MessageSquareQuote } from 'lucide-react';
 
-interface TestimonialData {
-    id: string;
-    content: string;
-    user: {
-        username: string;
-    };
+interface TestimonialSliderProps {
+    projectId: string;
 }
 
-const TestimonialSlider: React.FC = () => {
-    const [testimonials, setTestimonials] = useState<TestimonialData[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchTestimonials = async () => {
-            try {
-                const response = await apiClient.get('/testimonials/published/');
-                setTestimonials(response.data);
-            } catch (error) {
-                console.error("Failed to fetch testimonials:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTestimonials();
-    }, []);
-
-    if (loading) {
-        return <div className="text-center p-8">Loading testimonials...</div>;
-    }
-
-    if (testimonials.length === 0) {
-        return null; // Don't render the section if there are no testimonials
-    }
-
-    // Duplicate testimonials for a seamless loop effect
-    const extendedTestimonials = [...testimonials, ...testimonials];
-
-    return (
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 overflow-hidden">
-            <div className="max-w-6xl mx-auto">
-                 <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-black mb-12">
-                    Loved by Creators Worldwide
-                </h2>
-                <div className="relative h-96">
-                    <div className="absolute top-0 left-0 w-full h-full flex items-center animate-marquee">
-                        {extendedTestimonials.map((testimonial, index) => (
-                            <div key={`${testimonial.id}-${index}`} className="flex-shrink-0 w-full sm:w-1/2 lg:w-1/3 px-4">
-                                <TestimonialCard testimonial={testimonial} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+const getTestimonials = async (projectId: string): Promise<Testimonial[]> => {
+    const { data } = await apiClient.get(`/projects/${projectId}/testimonials/`);
+    return data;
 };
 
-// Add keyframes to tailwind.config.js for the marquee animation
-/*
-// tailwind.config.js
-theme: {
-    extend: {
-      animation: {
-        marquee: 'marquee 60s linear infinite',
-      },
-      keyframes: {
-        marquee: {
-          '0%': { transform: 'translateX(0%)' },
-          '100%': { transform: 'translateX(-50%)' },
-        },
-      },
-    },
-  },
-*/
+const TestimonialSlider: React.FC<TestimonialSliderProps> = ({ projectId }) => {
+    const { data: testimonials, isLoading, isError } = useQuery<Testimonial[], Error>({
+        queryKey: ['testimonials', projectId],
+        queryFn: () => getTestimonials(projectId),
+    });
 
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>;
+    }
+
+    if (isError || !testimonials || testimonials.length === 0) {
+        return (
+            <div className="p-4 text-center">
+                <p className="text-gray-500">No testimonials available yet.</p>
+            </div>
+        );
+    }
+    
+    // For simplicity, we'll just show the first testimonial. A real slider would be more complex.
+    const testimonial = testimonials[0];
+
+    return (
+        <Card className="m-4">
+            <CardContent className="p-6 text-center">
+                <MessageSquareQuote className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-lg italic">"{testimonial.content}"</p>
+                <footer className="mt-4 font-semibold text-gray-600">- {testimonial.user.username}</footer>
+            </CardContent>
+        </Card>
+    );
+};
 
 export default TestimonialSlider;
