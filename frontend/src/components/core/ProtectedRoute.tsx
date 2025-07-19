@@ -1,23 +1,24 @@
-import { useContext } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
-const ProtectedRoute = () => {
-  const authContext = useContext(AuthContext);
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
 
-  // If context is not available, it's a loading/error state. Redirect to login.
-  if (!authContext) {
-    return <Navigate to="/login" />;
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    // You can replace this with a more sophisticated loading spinner
+    return <div>Loading...</div>;
   }
-
-  const { isAuthenticated } = authContext;
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
-  // If authenticated, render the child route content
-  return <Outlet />;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
