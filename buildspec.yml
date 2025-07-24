@@ -1,10 +1,16 @@
 version: 0.2
+
 phases:
+  install:
+    commands:
+      - echo "Installing zip utility..."
+      - yum install -y zip
   build:
     commands:
       - echo "Zipping the backend directory..."
       - cd backend
       - zip -r ../backend-app.zip .
+
 artifacts:
   files:
     - backend-app.zip
