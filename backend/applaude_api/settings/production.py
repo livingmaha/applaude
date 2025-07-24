@@ -49,7 +49,11 @@ DATABASES = {
         'HOST': secrets['DB_HOST'],
         'PORT': secrets['DB_PORT'],
         'OPTIONS': {
-            'ssl': {'ca': '/path/to/your/rds-ca-2019-root.pem'} # IMPORTANT: Provide correct path to CA cert
+            'ssl_mode': 'VERIFY_IDENTITY',
+            # This uses the correct path to AWS's global certificate bundle
+            'ssl': {
+                'ca': '/etc/ssl/certs/aws-global-bundle.pem'
+            }
         },
         'POOL_OPTIONS': {
             'POOL_SIZE': 10,
