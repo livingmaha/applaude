@@ -1,3 +1,5 @@
+# FILE: backend/applaude_api/settings/production.py
+
 import boto3
 import json
 import sentry_sdk
@@ -32,14 +34,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000 # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
 
-
+# Database Configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django_mysql_pool.backends.mysql',
@@ -50,19 +47,13 @@ DATABASES = {
         'PORT': secrets['DB_PORT'],
         'OPTIONS': {
             'ssl_mode': 'VERIFY_IDENTITY',
-            # This uses the correct path to AWS's global certificate bundle
-            'ssl': {
-                'ca': '/etc/ssl/certs/aws-global-bundle.pem'
-            }
+            'ssl': {'ca': '/etc/ssl/certs/aws-global-bundle.pem'}
         },
-        'POOL_OPTIONS': {
-            'POOL_SIZE': 10,
-            'MAX_OVERFLOW': 10,
-            'RECYCLE': 24 * 60 * 60,
-        },
+        'POOL_OPTIONS': {'POOL_SIZE': 10, 'MAX_OVERFLOW': 10, 'RECYCLE': 24 * 60 * 60}
     }
 }
-
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 CHANNEL_LAYERS = {
     "default": {
