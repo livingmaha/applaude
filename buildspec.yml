@@ -1,0 +1,10 @@
+version: 0.2
+phases:
+  build:
+    commands:
+      - echo "Zipping the backend directory..."
+      - cd backend
+      - zip -r ../backend-app.zip .
+artifacts:
+  files:
+    - backend-app.zip
