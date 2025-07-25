@@ -45,8 +45,11 @@ COPY --chown=webapp:webapp --from=builder /home/webapp/venv /home/webapp/venv
 # Copy application code
 COPY --chown=webapp:webapp backend/ .
 
-# Copy supervisor configuration
+# Make the entrypoint script executable inside the container
 USER root
+RUN chmod +x /home/webapp/app/entrypoint.sh
+
+# Copy supervisor configuration
 COPY --chown=root:root backend/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 USER webapp
 
