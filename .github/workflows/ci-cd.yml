@@ -81,7 +81,7 @@ jobs:
           echo '}' >> Dockerrun.aws.json
           
           # Zip all required deployment configurations into a single artifact
-          zip -r deploy.zip Dockerrun.aws.json backend/.ebextensions backend/.platform backend/Procfile
+          zip -r deploy.zip Dockerrun.aws.json backend/.ebextensions backend/.platform
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
