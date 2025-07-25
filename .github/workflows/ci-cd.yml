@@ -1,205 +1,41 @@
-name: Applaude Production CI/CD
+# ---- Builder Stage ----
+FROM python:3.11-slim-bullseye AS builder
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+WORKDIR /usr/src/app
 
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: applaude-backend
-  EB_APPLICATION_NAME: applaude-backend
-  EB_PROD_ENV_NAME: applaude-prod-env
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-jobs:
-  backend-ci:
-    name: Lint, Test & Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc default-libmysqlclient-dev pkg-config && \
+    rm -rf /var/lib/apt/lists/*
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels -r requirements.txt
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+# ---- Final Stage ----
+FROM python:3.11-slim-bullseye AS final
 
-      - name: Install Backend Dependencies
-        working-directory: ./backend
-        run: pip install -r requirements.txt
+WORKDIR /usr/src/app
 
-      - name: Run Backend Linters
-        working-directory: ./backend
-        run: |
-          pip install black flake8
-          black --check .
-          flake8 .
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SETTINGS_MODULE=applaude_api.settings.production
+ENV DOCKER_CONTAINER=true
 
-      - name: Install Frontend Dependencies
-        working-directory: ./frontend
-        run: npm install
+RUN groupadd -r applaude && useradd --no-log-init -r -g applaude applaude
 
-      - name: Run Frontend Lint
-        working-directory: ./frontend
-        run: npm run lint
+RUN apt-get update && apt-get install -y --no-install-recommends libmysqlclient-dev && rm -rf /var/lib/apt/lists/*
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python, javascript
+COPY --from=builder /usr/src/app/wheels /wheels
+RUN pip install --no-cache /wheels/*
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+COPY . .
 
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/python-3.11@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: snyk test --all-projects --fail-on=upgradable --severity-threshold=high
+RUN chown -R applaude:applaude /usr/src/app
+USER applaude
 
-  build-and-push-to-ecr:
-    name: Build and Push to ECR
-    runs-on: ubuntu-latest
-    needs: backend-ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    outputs:
-      image_tag: ${{ steps.build-image.outputs.image_tag }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+EXPOSE 8000
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-  deploy-backend-production:
-    name: Deploy Backend to Production
-    runs-on: ubuntu-latest
-    needs: build-and-push-to-ecr
-    environment: production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Create Dockerrun.aws.json
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ needs.build-and-push-to-ecr.outputs.image_tag }}
-        run: |
-          echo '{' > Dockerrun.aws.json
-          echo '  "AWSEBDockerrunVersion": "1",' >> Dockerrun.aws.json
-          echo '  "Image": {' >> Dockerrun.aws.json
-          echo '    "Name": "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}",' >> Dockerrun.aws.json
-          echo '    "Update": "true"' >> Dockerrun.aws.json
-          echo '  },' >> Dockerrun.aws.json
-          echo '  "Ports": [' >> Dockerrun.aws.json
-          echo '    {' >> Dockerrun.aws.json
-          echo '      "ContainerPort": "8000"' >> Dockerrun.aws.json
-          echo '    }' >> Dockerrun.aws.json
-          echo '  ]' >> Dockerrun.aws.json
-          echo '}' >> Dockerrun.aws.json
-          # THE FIX: Add the .platform directory to the zip archive
-          zip -r deploy.zip Dockerrun.aws.json backend/.ebextensions backend/.platform
-
-      - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v21
-        with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: ${{ env.EB_APPLICATION_NAME }}
-          environment_name: ${{ env.EB_PROD_ENV_NAME }}
-          version_label: prod-${{ needs.build-and-push-to-ecr.outputs.image_tag }}
-          region: ${{ env.AWS_REGION }}
-          deployment_package: deploy.zip
-
-  frontend-preview:
-    name: Deploy Frontend to Vercel Preview
-    runs-on: ubuntu-latest
-    needs: backend-ci
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./frontend
-
-      - name: Build Project Artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }} --build-env VITE_API_BASE_URL=${{ secrets.STAGING_BACKEND_URL }}
-        working-directory: ./frontend
-
-      - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./frontend
-
-  frontend-deploy:
-    name: Deploy Frontend to Vercel Production
-    runs-on: ubuntu-latest
-    needs: deploy-backend-production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-      
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./frontend
-
-      - name: Build Project Artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }} --build-env VITE_API_BASE_URL=${{ secrets.PRODUCTION_BACKEND_URL }}
-        working-directory: ./frontend
-
-      - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./frontend
-
+# THE FIX: Explicitly define the command to run the application.
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "applaude_api.wsgi:application"]
