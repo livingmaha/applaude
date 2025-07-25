@@ -37,5 +37,5 @@ USER applaude
 
 EXPOSE 8000
 
-# Add the command to run the application
+# THE FIX: Explicitly define the command to run the application.
 CMD ["gunicorn", "--config", "gunicorn.conf.py", "applaude_api.wsgi:application"]
