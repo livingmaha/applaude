@@ -28,16 +28,18 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt
+        working-directory: ./backend
+        run: pip install -r requirements.txt
 
       - name: Run tests
-        run: python backend/manage.py test
+        working-directory: ./backend
+        run: python manage.py test
 
   build-and-deploy:
     name: Build, Push, and Deploy to Production
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' # Only run on push to main
     
     steps:
       - name: Checkout code
@@ -54,34 +56,35 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image
+      - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile ./backend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Create deployment artifact
+      - name: Generate Dockerrun.aws.json
         run: |
-          # Create the Dockerrun.aws.json file pointing to the new image
           echo '{' > Dockerrun.aws.json
-          echo '  "AWSEBDockerrunVersion": "2",' >> Dockerrun.aws.json
+          echo '  "AWSEBDockerrunVersion": "1",' >> Dockerrun.aws.json
           echo '  "Image": {' >> Dockerrun.aws.json
-          echo '    "Name": "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.build-image.outputs.image_tag }}",' >> Dockerrun.aws.json
+          echo '    "Name": "${{ steps.build-image.outputs.image_uri }}",' >> Dockerrun.aws.json
           echo '    "Update": "true"' >> Dockerrun.aws.json
           echo '  },' >> Dockerrun.aws.json
           echo '  "Ports": [' >> Dockerrun.aws.json
           echo '    {' >> Dockerrun.aws.json
-          echo '      "ContainerPort": "8000"' >> Dockerrun.aws.json
+          echo '      "ContainerPort": 8000,' >> Dockerrun.aws.json
+          echo '      "HostPort": 80' >> Dockerrun.aws.json
           echo '    }' >> Dockerrun.aws.json
-          echo '  ]' >> Dockerrun.aws.json
+          echo '  ],' >> Dockerrun.aws.json
+          echo '  "Logging": "/var/log/eb-docker/containers/eb-current-app"' >> Dockerrun.aws.json
           echo '}' >> Dockerrun.aws.json
-          
-          # Zip all required deployment configurations into a single artifact
-          zip -r deploy.zip Dockerrun.aws.json backend/.ebextensions backend/.platform
+
+      - name: Create deployment zip
+        run: zip deploy.zip Dockerrun.aws.json
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
@@ -90,6 +93,7 @@ jobs:
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: ${{ env.EB_APPLICATION_NAME }}
           environment_name: ${{ env.EB_ENVIRONMENT_NAME }}
+          version_label: "prod-${{ github.sha }}"
           region: ${{ env.AWS_REGION }}
-          version_label: "prod-${{ steps.build-image.outputs.image_tag }}"
           deployment_package: deploy.zip
+          wait_for_environment_recovery: 600
