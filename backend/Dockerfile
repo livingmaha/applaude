@@ -16,26 +16,37 @@ RUN pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels -r requirements.txt
 # ---- Final Stage ----
 FROM python:3.11-slim-bullseye AS final
 
-WORKDIR /usr/src/app
+WORKDIR /var/app/current
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_SETTINGS_MODULE=applaude_api.settings.production
 ENV DOCKER_CONTAINER=true
 
-RUN groupadd -r applaude && useradd --no-log-init -r -g applaude applaude
+# Create a non-root user for security. Note: EB uses 'webapp' user by default.
+RUN groupadd -r webapp && useradd --no-log-init -r -g webapp webapp
 
-RUN apt-get update && apt-get install -y --no-install-recommends libmysqlclient-dev && rm -rf /var/lib/apt/lists/*
+# Install supervisor and runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends libmysqlclient-dev supervisor && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /var/log/supervisor
 
+# Copy pre-compiled wheels from the builder stage
 COPY --from=builder /usr/src/app/wheels /wheels
 RUN pip install --no-cache /wheels/*
 
+# Copy the supervisor configuration file
+COPY backend/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy the application source code
 COPY . .
 
-RUN chown -R applaude:applaude /usr/src/app
-USER applaude
+# Create log files and set permissions
+RUN touch /var/log/gunicorn.log /var/log/gunicorn_err.log /var/log/celery_worker.log /var/log/celery_worker_err.log /var/log/celery_beat.log /var/log/celery_beat_err.log && \
+    chown -R webapp:webapp /var/app/current /var/log
+
+USER webapp
 
 EXPOSE 8000
 
-# THE FIX: Explicitly define the command to run the application.
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "applaude_api.wsgi:application"]
+# THE FINAL FIX: Start supervisor to manage all processes
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
