@@ -1,41 +1,129 @@
-# ---- Builder Stage ----
-FROM python:3.11-slim-bullseye AS builder
+name: Applaude Backend CI/CD
 
-WORKDIR /usr/src/app
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+env:
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+  EB_APPLICATION_NAME: "applaude-backend"
+  EB_ENVIRONMENT_NAME: "applaude-backend-prod"
+  AWS_REGION: "us-east-1"
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc default-libmysqlclient-dev pkg-config && \
-    rm -rf /var/lib/apt/lists/*
+jobs:
+  test:
+    name: Run Django Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-COPY requirements.txt .
-RUN pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels -r requirements.txt
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-# ---- Final Stage ----
-FROM python:3.11-slim-bullseye AS final
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
 
-WORKDIR /usr/src/app
+      - name: Run tests
+        run: |
+          cd backend
+          python manage.py test
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV DJANGO_SETTINGS_MODULE=applaude_api.settings.production
-ENV DOCKER_CONTAINER=true
+  build-and-push-to-ecr:
+    name: Build and Push Docker Image to ECR
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' # Only run on merge to main
+    
+    outputs:
+      image_tag: ${{ steps.build-image.outputs.image_tag }}
 
-RUN groupadd -r applaude && useradd --no-log-init -r -g applaude applaude
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-RUN apt-get update && apt-get install -y --no-install-recommends libmysqlclient-dev && rm -rf /var/lib/apt/lists/*
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-COPY --from=builder /usr/src/app/wheels /wheels
-RUN pip install --no-cache /wheels/*
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-COPY . .
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build and push the Docker image from the 'backend' directory
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile ./backend
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          # Set the image_tag output for the next job
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-RUN chown -R applaude:applaude /usr/src/app
-USER applaude
+  deploy-backend-production:
+    name: Deploy to Elastic Beanstalk Production
+    runs-on: ubuntu-latest
+    needs: build-and-push-to-ecr
+    if: github.ref == 'refs/heads/main'
 
-EXPOSE 8000
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-# THE FIX: Explicitly define the command to run the application.
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "applaude_api.wsgi:application"]
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Create deployment artifact
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.build-and-push-to-ecr.outputs.image_tag }}
+        run: |
+          # Create the Dockerrun.aws.json file
+          echo '{' > Dockerrun.aws.json
+          echo '  "AWSEBDockerrunVersion": "1",' >> Dockerrun.aws.json
+          echo '  "Image": {' >> Dockerrun.aws.json
+          echo '    "Name": "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}",' >> Dockerrun.aws.json
+          echo '    "Update": "true"' >> Dockerrun.aws.json
+          echo '  },' >> Dockerrun.aws.json
+          echo '  "Ports": [' >> Dockerrun.aws.json
+          echo '    {' >> Dockerrun.aws.json
+          echo '      "ContainerPort": "8000"' >> Dockerrun.aws.json
+          echo '    }' >> Dockerrun.aws.json
+          echo '  ]' >> Dockerrun.aws.json
+          echo '}' >> Dockerrun.aws.json
+          
+          # THE FIX: Zip all required deployment configs into the artifact.
+          # This includes Dockerrun.aws.json and the .ebextensions and .platform directories from the backend folder.
+          zip -r deploy.zip Dockerrun.aws.json backend/.ebextensions backend/.platform
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: ${{ env.EB_APPLICATION_NAME }}
+          environment_name: ${{ env.EB_ENVIRONMENT_NAME }}
+          region: ${{ env.AWS_REGION }}
+          version_label: "prod-${{ needs.build-and-push-to-ecr.outputs.image_tag }}"
+          deployment_package: deploy.zip
