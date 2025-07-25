@@ -1,5 +1,3 @@
-# FILE: backend/applaude_api/settings/production.py
-
 import boto3
 import json
 import sentry_sdk
