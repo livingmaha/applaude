@@ -1,62 +1,41 @@
-import boto3
-import json
-import sentry_sdk
-from botocore.exceptions import ClientError
+# backend/applaude_api/settings/production.py
 from .base import *
+import os
 
 DEBUG = False
 
-# Fetch secrets from AWS Secrets Manager
-def get_secret():
-    secret_name = "applaude/production"
-    region_name = "us-east-1"  # Or your specific region
-
-    session = boto3.session.Session()
-    client = session.client(service_name='secretsmanager', region_name=region_name)
-
-    try:
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-    except ClientError as e:
-        raise e
-    else:
-        return json.loads(get_secret_value_response['SecretString'])
-
-secrets = get_secret()
-
-SECRET_KEY = secrets['DJANGO_SECRET_KEY']
-ALLOWED_HOSTS = secrets.get('ALLOWED_HOSTS', '').split(',')
-CORS_ALLOWED_ORIGINS = secrets.get('CORS_ALLOWED_ORIGINS', '').split(',')
+# Secrets are loaded from environment variables set by Elastic Beanstalk
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
 
 # --- PRODUCTION SECURITY SETTINGS ---
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 # --- DATABASE CONFIGURATION ---
+# Database URL is provided by Elastic Beanstalk environment properties
 DATABASES = {
     'default': {
-        'ENGINE': 'django_mysql_pool.backends.mysql',
-        'NAME': secrets['DB_NAME'],
-        'USER': secrets['DB_USER'],
-        'PASSWORD': secrets['DB_PASSWORD'],
-        'HOST': secrets['DB_HOST'],
-        'PORT': secrets['DB_PORT'],
-        'OPTIONS': {
-            'ssl_mode': 'VERIFY_IDENTITY',
-            'ssl': {'ca': '/etc/ssl/certs/aws-global-bundle.pem'}
-        },
-        'POOL_OPTIONS': {'POOL_SIZE': 10, 'MAX_OVERFLOW': 10, 'RECYCLE': 24 * 60 * 60}
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ['DB_NAME'],
+        'USER': os.environ['DB_USER'],
+        'PASSWORD': os.environ['DB_PASSWORD'],
+        'HOST': os.environ['DB_HOST'],
+        'PORT': os.environ['DB_PORT'],
     }
 }
 
-# --- STATIC FILES CONFIGURATION (THE FIX) ---
-# Nginx will serve static files in production.
+# --- Redis for Celery ---
+CELERY_BROKER_URL = os.environ.get("REDIS_URL")
+CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL")
+
+# --- Static Files ---
+# Nginx (configured via .platform hooks) will serve files from STATIC_ROOT
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# We remove whitenoise storage for production.
-# STATICFILES_STORAGE is not needed here; Django's default will be used.
-# --- END OF FIX ---
-
-# Sentry, Email, and other settings can remain as they are.
-# (Assuming they are correctly configured in base.py and secrets)
