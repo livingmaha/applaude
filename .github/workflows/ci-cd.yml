@@ -62,11 +62,25 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile ./backend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image_tag::$IMAGE_TAG"
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Create deployment artifact
         run: |
-          echo '{"AWSEBDockerrunVersion": "1", "Image": {"Name": "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.build-image.outputs.image_tag }}", "Update": "true"}, "Ports": [{"ContainerPort": "8000"}]}' > Dockerrun.aws.json
+          # Create the Dockerrun.aws.json file pointing to the new image
+          echo '{' > Dockerrun.aws.json
+          echo '  "AWSEBDockerrunVersion": "2",' >> Dockerrun.aws.json
+          echo '  "Image": {' >> Dockerrun.aws.json
+          echo '    "Name": "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.build-image.outputs.image_tag }}",' >> Dockerrun.aws.json
+          echo '    "Update": "true"' >> Dockerrun.aws.json
+          echo '  },' >> Dockerrun.aws.json
+          echo '  "Ports": [' >> Dockerrun.aws.json
+          echo '    {' >> Dockerrun.aws.json
+          echo '      "ContainerPort": "8000"' >> Dockerrun.aws.json
+          echo '    }' >> Dockerrun.aws.json
+          echo '  ]' >> Dockerrun.aws.json
+          echo '}' >> Dockerrun.aws.json
+          
+          # Zip all required deployment configurations into a single artifact
           zip -r deploy.zip Dockerrun.aws.json backend/.ebextensions backend/.platform backend/Procfile
 
       - name: Deploy to Elastic Beanstalk
