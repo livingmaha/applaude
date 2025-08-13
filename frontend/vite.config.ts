@@ -4,6 +4,8 @@ import { defineConfig } from "vite"
 import tsconfigPaths from "vite-tsconfig-paths" // Add this import
 
 export default defineConfig({
+  base: "/applaude/",
+  
   plugins: [react(), tsconfigPaths()], // Add tsconfigPaths() here
   resolve: {
     alias: {
