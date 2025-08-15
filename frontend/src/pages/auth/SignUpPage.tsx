@@ -1,3 +1,4 @@
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '@/services/api';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -108,7 +110,11 @@ const SignUpPage = () => {
                 )}
             />
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
+              {form.formState.isSubmitting ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating Account...</>
+              ) : (
+                'Create Account'
+              )}
             </Button>
           </form>
         </Form>

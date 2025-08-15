@@ -1,12 +1,10 @@
 import path from "path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import tsconfigPaths from "vite-tsconfig-paths" // Add this import
+import tsconfigPaths from "vite-tsconfig-paths"
 
 export default defineConfig({
-  base: "/applaude/",
-  
-  plugins: [react(), tsconfigPaths()], // Add tsconfigPaths() here
+  plugins: [react(), tsconfigPaths()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -19,6 +17,18 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+      },
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+        },
       },
     },
   },

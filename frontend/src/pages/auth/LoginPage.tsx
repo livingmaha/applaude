@@ -1,3 +1,4 @@
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,9 +6,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/useAuth';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { apiClient } from '@/services/api';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({
@@ -23,6 +25,8 @@ type FormData = z.infer<typeof formSchema>;
 const LoginPage = () => {
   const { login } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -37,7 +41,7 @@ const LoginPage = () => {
       const response = await apiClient.post('/users/token/', data);
       await login(response.data.access, response.data.refresh);
       toast.success('Login successful!');
-      navigate('/dashboard');
+      navigate(from, { replace: true });
     } catch (error) {
       console.error('Login failed:', error);
       toast.error('Login failed. Please check your credentials.');
@@ -77,7 +81,11 @@ const LoginPage = () => {
               )}
             />
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Logging in...' : 'Login'}
+              {form.formState.isSubmitting ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Logging in...</>
+              ) : (
+                'Login'
+              )}
             </Button>
           </form>
         </Form>

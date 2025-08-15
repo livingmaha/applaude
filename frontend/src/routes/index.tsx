@@ -1,6 +1,7 @@
+import React from 'react';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import PrivateRoute from '@/components/common/PrivateRoute';
+import PrivateRoute from '@/components/auth/PrivateRoute';
 import SuperuserRoute from '@/components/auth/SuperuserRoute';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -33,7 +34,7 @@ const UpgradeSubscriptionPage = lazy(() => import('@/pages/UpgradeSubscriptionPa
 // Fallback component for Suspense
 const PageLoader = () => (
   <div className="flex justify-center items-center h-screen">
-    <Loader2 className="h-16 w-16 animate-spin text-ion-blue" />
+    <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
   </div>
 );
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuth';
 import { Button } from '@/components/ui/Button';
@@ -35,7 +36,7 @@ const Header: React.FC = () => {
     return (
         <header className="bg-white shadow-sm sticky top-0 z-50">
             <nav className="container mx-auto px-4 lg:px-6 py-3 flex justify-between items-center">
-                <Link to="/" className="text-2xl font-bold text-gray-800">
+                <Link to="/" className="text-2xl font-bold text-gray-800 hover:text-blue-600 transition-colors">
                     Applaude
                 </Link>
                 <div className="flex items-center space-x-2 md:space-x-4">
@@ -59,7 +60,7 @@ const Header: React.FC = () => {
 
                     {isAuthenticated ? (
                         <>
-                            <span className="hidden md:inline text-gray-700">Hi, {user?.username}</span>
+                            <span className="hidden md:inline text-gray-700">Hi, {user?.username || user?.email}</span>
                             <Button variant="outline" onClick={() => navigate('/dashboard')}>Dashboard</Button>
                             <Button onClick={handleLogout}>Logout</Button>
                         </>

@@ -8,14 +8,13 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-    const isLoading = useAuthStore(state => state.isLoading);
+    const { isAuthenticated, isLoading } = useAuthStore();
     const location = useLocation();
 
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="h-10 w-10 animate-spin text-ion-blue" />
+                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
             </div>
         );
     }

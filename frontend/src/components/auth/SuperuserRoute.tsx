@@ -14,7 +14,7 @@ const SuperuserRoute: React.FC<SuperuserRouteProps> = ({ children }) => {
   if (isLoading) {
     return (
         <div className="min-h-screen flex items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-ion-blue" />
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
         </div>
     );
   }
@@ -23,7 +23,7 @@ const SuperuserRoute: React.FC<SuperuserRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!user?.is_superuser) {
+  if (!user || !user.is_superuser) {
     return <Navigate to="/dashboard" replace />;
   }
 

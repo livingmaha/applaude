@@ -1,3 +1,4 @@
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -88,7 +90,11 @@ const CreateProjectPage = () => {
                 )}
               />
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Creating...' : 'Create Project'}
+                {mutation.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+                ) : (
+                  'Create Project'
+                )}
               </Button>
             </form>
           </Form>

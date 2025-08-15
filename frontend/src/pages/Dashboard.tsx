@@ -1,9 +1,11 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { apiClient } from '@/services/api';
 import { Project } from '@/types';
+import { AlertCircle } from 'lucide-react';
 
 const getProjects = async (): Promise<Project[]> => {
     const { data } = await apiClient.get('/projects/');
@@ -38,8 +40,17 @@ const Dashboard = () => {
       )}
 
       {isError && (
-        <div className="text-red-500 text-center p-4 bg-red-100 rounded-lg">
+        <div className="text-red-500 text-center p-4 bg-red-50 border border-red-200 rounded-lg">
+          <AlertCircle className="mx-auto h-8 w-8 text-red-500 mb-2" />
+          <h3 className="text-lg font-semibold mb-1">Error Loading Projects</h3>
           <p>Error loading projects: {error.message}</p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()} 
+            className="mt-2"
+          >
+            Try Again
+          </Button>
         </div>
       )}
 

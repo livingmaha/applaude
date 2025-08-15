@@ -1,7 +1,9 @@
 import React from 'react';
+import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/Card';
-import tsionImage from '@/assets/images/tsion_tamirat.jpg.jpg';
-import mugambiImage from '@/assets/images/mugambi_john_ndeke.jpg.jpg';
+// Using placeholder images for now since assets are not accessible
+const tsionImage = 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face';
+const mugambiImage = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
 
 const testimonials = [
   {
