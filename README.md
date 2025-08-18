@@ -26,6 +26,24 @@ This platform has been architected for extreme scalability and security, ready t
 
 ## Getting Started (for Developers)
 
+## ⚠️ Important Notes
+
+**All npm commands must be executed from within the `frontend/` directory or by using the `--prefix frontend` flag.**
+
+The project structure places the frontend code in a subdirectory, so npm cannot find `package.json` when run from the project root.
+
+**Correct usage:**
+```bash
+# Option 1: Navigate to frontend directory first
+cd frontend
+npm install
+npm run dev
+
+# Option 2: Use --prefix flag from project root
+npm install --prefix frontend
+npm run dev --prefix frontend
+```
+
 ### Prerequisites
 
 -   Docker & Docker Compose
